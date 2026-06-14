@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>SMA Alerts</title>
+    <style>
+        :root {
+            --bg: #f2f2f7;
+            --surface: #ffffff;
+            --surface-2: #f2f2f7;
+            --border: rgba(0,0,0,0.08);
+            --text: #1c1c1e;
+            --text-2: #3a3a3c;
+            --text-3: #8e8e93;
+            --accent: #007aff;
+            --buy: #34c759;
+            --buy-bg: #e8faf0;
+            --buy-text: #1a7a37;
+            --sell: #ff3b30;
+            --sell-bg: #fff0ef;
+            --sell-text: #c0392b;
+            --hold: #ff9500;
+            --hold-bg: #fff8ed;
+            --hold-text: #9a5e00;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+            --shadow: 0 2px 12px rgba(0,0,0,0.08);
+            --radius: 16px;
+            --radius-sm: 10px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #000000;
+                --surface: #1c1c1e;
+                --surface-2: #2c2c2e;
+                --border: rgba(255,255,255,0.08);
+                --text: #ffffff;
+                --text-2: #ebebf5;
+                --text-3: #8e8e93;
+                --buy-bg: #0d2e18;
+                --buy-text: #4cd97d;
+                --sell-bg: #2d100e;
+                --sell-text: #ff6b63;
+                --hold-bg: #2c1f00;
+                --hold-text: #ffb340;
+                --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+                --shadow: 0 2px 12px rgba(0,0,0,0.3);
+            }
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .page {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 16px 16px 32px;
+        }
+
+        /* ── Header ── */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0 20px;
+        }
+
+        .header-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.5px;
+        }
+
+        .header-subtitle {
+            font-size: 13px;
+            color: var(--text-3);
+            margin-top: 2px;
+        }
+
+        .settings-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            flex-shrink: 0;
+            transition: opacity 0.15s;
+        }
+
+        .settings-btn:active { opacity: 0.6; }
+
+        /* ── Signal Hero ── */
+        .signal-card {
+            border-radius: var(--radius);
+            padding: 28px 24px;
+            text-align: center;
+            margin-bottom: 12px;
+            transition: background 0.3s, box-shadow 0.3s;
+            box-shadow: var(--shadow);
+        }
+
+        .signal-card.buy  { background: var(--buy-bg); }
+        .signal-card.sell, .signal-card.sell-80, .signal-card.sell-all { background: var(--sell-bg); }
+        .signal-card.hold { background: var(--hold-bg); }
+        .signal-card.empty {
+            background: var(--surface);
+            border: 1px dashed var(--border);
+            box-shadow: none;
+        }
+
+        .signal-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-3);
+            margin-bottom: 8px;
+        }
+
+        .signal-value {
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            line-height: 1;
+        }
+
+        .signal-card.buy  .signal-value  { color: var(--buy-text); }
+        .signal-card.sell .signal-value,
+        .signal-card.sell-80 .signal-value,
+        .signal-card.sell-all .signal-value { color: var(--sell-text); }
+        .signal-card.hold .signal-value { color: var(--hold-text); }
+        .signal-card.empty .signal-value { color: var(--text-3); font-size: 32px; font-weight: 600; }
+
+        .signal-pct {
+            font-size: 15px;
+            font-weight: 500;
+            margin-top: 8px;
+            opacity: 0.75;
+        }
+
+        .signal-card.buy  .signal-pct  { color: var(--buy-text); }
+        .signal-card.sell .signal-pct,
+        .signal-card.sell-80 .signal-pct,
+        .signal-card.sell-all .signal-pct { color: var(--sell-text); }
+        .signal-card.hold .signal-pct { color: var(--hold-text); }
+
+        /* ── Data rows ── */
+        .data-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .data-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 13px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .data-row:last-child { border-bottom: none; }
+
+        .data-row-label {
+            font-size: 15px;
+            color: var(--text-2);
+        }
+
+        .data-row-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ── Refresh button ── */
+        .refresh-btn {
+            width: 100%;
+            padding: 15px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: opacity 0.15s, transform 0.1s;
+            font-family: inherit;
+            letter-spacing: -0.2px;
+        }
+
+        .refresh-btn:active {
+            opacity: 0.85;
+            transform: scale(0.98);
+        }
+
+        .refresh-btn:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
+
+        /* ── Last updated ── */
+        .last-updated {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-3);
+            margin-bottom: 20px;
+        }
+
+        /* ── Error ── */
+        .error-card {
+            background: var(--sell-bg);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            font-size: 14px;
+            color: var(--sell-text);
+            margin-bottom: 12px;
+            display: none;
+        }
+
+        .error-card-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        /* ── Position bar ── */
+        .threshold-bar {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .threshold-bar-label {
+            font-size: 12px;
+            color: var(--text-3);
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .bar-track {
+            position: relative;
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(to right,
+                var(--sell) 0%,
+                var(--sell) 15%,
+                var(--hold) 15%,
+                var(--hold) 60%,
+                var(--buy) 60%,
+                var(--buy) 80%,
+                #ff6b00 80%,
+                #ff6b00 90%,
+                #8b0000 90%,
+                #8b0000 100%
+            );
+            opacity: 0.4;
+            margin-bottom: 6px;
+        }
+
+        .bar-marker {
+            position: absolute;
+            top: -4px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--text);
+            border: 2px solid var(--surface);
+            box-shadow: var(--shadow-sm);
+            transform: translateX(-50%);
+            transition: left 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .bar-zones {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: var(--text-3);
+            margin-top: 4px;
+        }
+
+        /* ── Settings overlay ── */
+        .settings-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 100;
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+        }
+
+        .settings-overlay.open { display: flex; align-items: flex-end; }
+
+        .settings-sheet {
+            background: var(--surface);
+            border-radius: 20px 20px 0 0;
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            padding-bottom: env(safe-area-inset-bottom);
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+            max-height: 85vh;
+            overflow-y: auto;
+            animation: slideUp 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to   { transform: translateY(0); }
+        }
+
+        .sheet-handle {
+            width: 36px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            margin: 10px auto 20px;
+        }
+
+        .sheet-title {
+            font-size: 18px;
+            font-weight: 700;
+            padding: 0 20px 16px;
+            color: var(--text);
+            letter-spacing: -0.3px;
+        }
+
+        .settings-group {
+            margin-bottom: 8px;
+        }
+
+        .settings-group-label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-3);
+            padding: 0 20px 6px;
+        }
+
+        .settings-rows {
+            background: var(--surface-2);
+            border-radius: var(--radius-sm);
+            margin: 0 16px;
+            overflow: hidden;
+        }
+
+        .settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            gap: 12px;
+        }
+
+        .settings-row:last-child { border-bottom: none; }
+
+        .settings-row-label {
+            font-size: 15px;
+            color: var(--text);
+            flex: 1;
+        }
+
+        .settings-row-hint {
+            font-size: 12px;
+            color: var(--text-3);
+            margin-top: 1px;
+        }
+
+        .settings-input {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 15px;
+            color: var(--text);
+            font-family: inherit;
+            text-align: right;
+            width: 80px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .settings-select {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 15px;
+            color: var(--text);
+            font-family: inherit;
+            max-width: 160px;
+        }
+
+        .settings-input:focus,
+        .settings-select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .notif-time-row {
+            transition: max-height 0.2s ease, opacity 0.2s ease;
+            overflow: hidden;
+            max-height: 60px;
+        }
+
+        .notif-time-row.hidden {
+            max-height: 0;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .sheet-done-btn {
+            display: block;
+            width: calc(100% - 32px);
+            margin: 16px 16px 8px;
+            padding: 14px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 16px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+
+        .sheet-done-btn:active { opacity: 0.8; }
+    </style>
+</head>
+<body>
+
+<div class="page">
+
+    <!-- Header -->
+    <div class="header">
+        <div>
+            <div class="header-title" id="headerTitle">SMA Signals</div>
+            <div class="header-subtitle">200-day moving average</div>
+        </div>
+        <div class="settings-btn" onclick="openSettings()" title="Settings">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Signal Hero -->
+    <div class="signal-card empty" id="signalCard">
+        <div class="signal-label">Signal</div>
+        <div class="signal-value" id="signalValue">—</div>
+        <div class="signal-pct" id="signalPct" style="display:none"></div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-card" id="errorCard">
+        <div class="error-card-title">Couldn't load data</div>
+        <div id="errorMsg"></div>
+    </div>
+
+    <!-- Refresh -->
+    <button class="refresh-btn" id="refreshBtn" onclick="fetchData()">Refresh Signal</button>
+
+    <!-- Last updated -->
+    <div class="last-updated" id="lastUpdated"></div>
+
+    <!-- Data rows -->
+    <div class="data-card" id="dataCard" style="display:none">
+        <div class="data-row">
+            <span class="data-row-label" id="indexLabel">Index</span>
+            <span class="data-row-value" id="currentLevel">—</span>
+        </div>
+        <div class="data-row">
+            <span class="data-row-label">200-Day SMA</span>
+            <span class="data-row-value" id="smaValue">—</span>
+        </div>
+        <div class="data-row">
+            <span class="data-row-label">Distance from SMA</span>
+            <span class="data-row-value" id="difference">—</span>
+        </div>
+    </div>
+
+    <!-- Position bar -->
+    <div class="threshold-bar" id="thresholdBar" style="display:none">
+        <div class="threshold-bar-label">Position relative to SMA</div>
+        <div class="bar-track">
+            <div class="bar-marker" id="barMarker"></div>
+        </div>
+        <div class="bar-zones">
+            <span>SELL</span>
+            <span>HOLD</span>
+            <span>BUY</span>
+            <span>SELL 80%</span>
+            <span>SELL ALL</span>
+        </div>
+    </div>
+
+</div>
+
+<!-- Settings overlay -->
+<div class="settings-overlay" id="settingsOverlay" onclick="overlayClick(event)">
+    <div class="settings-sheet" id="settingsSheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">Settings</div>
+
+        <div class="settings-group">
+            <div class="settings-group-label">Market</div>
+            <div class="settings-rows">
+                <div class="settings-row">
+                    <div class="settings-row-label">Index</div>
+                    <select class="settings-select" id="indexSelect" onchange="onIndexChange()">
+                        <option value="$SPX">S&amp;P 500</option>
+                        <option value="$NASX">NASDAQ</option>
+                        <option value="URTH">MSCI World</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-group">
+            <div class="settings-group-label">Signal Thresholds</div>
+            <div class="settings-rows">
+                <div class="settings-row">
+                    <div>
+                        <div class="settings-row-label">Buy above SMA</div>
+                        <div class="settings-row-hint">Default: 4%</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:4px">
+                        <input class="settings-input" type="number" id="buyThreshold" value="4" step="0.1" min="0" max="100">
+                        <span style="font-size:15px;color:var(--text-3)">%</span>
+                    </div>
+                </div>
+                <div class="settings-row">
+                    <div>
+                        <div class="settings-row-label">Sell below SMA</div>
+                        <div class="settings-row-hint">Default: 3%</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:4px">
+                        <input class="settings-input" type="number" id="sellThreshold" value="3" step="0.1" min="0" max="100">
+                        <span style="font-size:15px;color:var(--text-3)">%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-group">
+            <div class="settings-group-label">Notifications</div>
+            <div class="settings-rows">
+                <div class="settings-row">
+                    <div class="settings-row-label">Frequency</div>
+                    <select class="settings-select" id="notifFrequency" onchange="onNotifFreqChange()">
+                        <option value="disabled">Off</option>
+                        <option value="on_change" selected>On signal change</option>
+                        <option value="daily">Daily</option>
+                    </select>
+                </div>
+                <div class="settings-row notif-time-row" id="notifTimeRow">
+                    <div class="settings-row-label">Alert time</div>
+                    <input class="settings-input" type="time" id="notifTime" style="width:auto;text-align:right">
+                </div>
+            </div>
+        </div>
+
+        <button class="sheet-done-btn" onclick="closeSettings()">Done</button>
+    </div>
+</div>
+
+<script>
+    const INDEX = {
+        '$SPX':  { name: 'S&P 500',    label: 'S&P 500 ($SPX)' },
+        '$NASX': { name: 'NASDAQ',     label: 'NASDAQ ($NASX)' },
+        'URTH':  { name: 'MSCI World', label: 'MSCI World (URTH)' },
+    };
+
+    // ── Settings ──────────────────────────────────────────────────
+    function loadSettings() {
+        const buy  = localStorage.getItem('buyThreshold');
+        const sell = localStorage.getItem('sellThreshold');
+        const idx  = localStorage.getItem('selectedIndex');
+        const freq = localStorage.getItem('notifFrequency');
+        const hour = localStorage.getItem('notifHour');
+        const min  = localStorage.getItem('notifMinute');
+
+        if (buy)  document.getElementById('buyThreshold').value  = buy;
+        if (sell) document.getElementById('sellThreshold').value = sell;
+        document.getElementById('indexSelect').value = idx || '$SPX';
+
+        const oldEnabled = localStorage.getItem('notifEnabled');
+        if (freq) {
+            document.getElementById('notifFrequency').value = freq;
+        } else if (oldEnabled === 'false') {
+            document.getElementById('notifFrequency').value = 'disabled';
+        } else {
+            document.getElementById('notifFrequency').value = 'on_change';
+        }
+
+        if (hour && min) {
+            document.getElementById('notifTime').value =
+                `${String(hour).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
+        } else {
+            document.getElementById('notifTime').value = defaultNotifTime();
+        }
+
+        updateNotifTimeVisibility();
+        updateHeaderLabel();
+    }
+
+    function saveSettings() {
+        localStorage.setItem('buyThreshold',   document.getElementById('buyThreshold').value);
+        localStorage.setItem('sellThreshold',  document.getElementById('sellThreshold').value);
+        localStorage.setItem('selectedIndex',  document.getElementById('indexSelect').value);
+        localStorage.setItem('notifFrequency', document.getElementById('notifFrequency').value);
+
+        const timeVal = document.getElementById('notifTime').value || '15:30';
+        const [h, m]  = timeVal.split(':');
+        localStorage.setItem('notifHour',   String(parseInt(h || '15', 10)));
+        localStorage.setItem('notifMinute', String(parseInt(m || '30', 10)));
+
+        if (window.Android && typeof window.Android.rescheduleNotifications === 'function') {
+            try { window.Android.rescheduleNotifications(); } catch (_) {}
+        }
+    }
+
+    function defaultNotifTime() {
+        const now    = new Date();
+        const month  = now.getMonth();
+        const isDST  = month >= 2 && month <= 10;
+        const offset = isDST ? 4 : 5;
+        const yyyy   = now.getFullYear();
+        const mm     = String(now.getMonth() + 1).padStart(2,'0');
+        const dd     = String(now.getDate()).padStart(2,'0');
+        const t      = new Date(`${yyyy}-${mm}-${dd}T15:30:00-0${offset}:00`);
+        return `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
+    }
+
+    // ── Settings sheet ────────────────────────────────────────────
+    function openSettings() {
+        document.getElementById('settingsOverlay').classList.add('open');
+    }
+
+    function closeSettings() {
+        saveSettings();
+        document.getElementById('settingsOverlay').classList.remove('open');
+    }
+
+    function overlayClick(e) {
+        if (e.target === document.getElementById('settingsOverlay')) closeSettings();
+    }
+
+    function onIndexChange() {
+        updateHeaderLabel();
+        saveSettings();
+        fetchData();
+    }
+
+    function onNotifFreqChange() {
+        updateNotifTimeVisibility();
+    }
+
+    function updateNotifTimeVisibility() {
+        const freq = document.getElementById('notifFrequency').value;
+        document.getElementById('notifTimeRow').classList.toggle('hidden', freq === 'disabled');
+    }
+
+    function updateHeaderLabel() {
+        const idx = document.getElementById('indexSelect').value;
+        const cfg = INDEX[idx] || INDEX['$SPX'];
+        document.getElementById('headerTitle').textContent  = cfg.name + ' SMA';
+        document.getElementById('indexLabel').textContent   = cfg.label;
+    }
+
+    // ── Signal logic ──────────────────────────────────────────────
+    function determineSignal(price, sma, buyT, sellT) {
+        const pct = ((price - sma) / sma) * 100;
+        if (pct >= 40)     return { signal: 'SELL ALL', cls: 'sell-all', pct };
+        if (pct >= 30)     return { signal: 'SELL 80%', cls: 'sell-80',  pct };
+        if (pct >= buyT)   return { signal: 'BUY',      cls: 'buy',      pct };
+        if (pct <= -sellT) return { signal: 'SELL',     cls: 'sell',     pct };
+        return                    { signal: 'HOLD',     cls: 'hold',     pct };
+    }
+
+    // ── Data fetch ────────────────────────────────────────────────
+    async function fetchBarchartData(symbol) {
+        if (window.Android && typeof window.Android.getHistoricalData === 'function') {
+            try {
+                const raw = window.Android.getHistoricalData(symbol);
+                if (raw && raw.trim()) {
+                    const data = JSON.parse(raw);
+                    if (data.currentPrice && data.sma200) return data;
+                }
+            } catch (_) {}
+        }
+
+        const res = await fetch(
+            `https://www.barchart.com/stocks/quotes/${symbol}/technical-analysis`,
+            { headers: { 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' } }
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const html = await res.text();
+
+        let currentPrice = 0, sma200 = 0;
+        const priceMatch = html.match(/"lastPrice"\s*:\s*"?([0-9,]+\.?[0-9]*)"?/);
+        if (priceMatch) currentPrice = parseFloat(priceMatch[1].replace(/,/g, ''));
+        const smaMatch = html.match(/<td>200-Day<\/td>\s*<td[^>]*>\s*([\d,]+\.?\d*)\s*<\/td>/);
+        if (smaMatch) sma200 = parseFloat(smaMatch[1].replace(/,/g, ''));
+
+        if (!currentPrice || !sma200) throw new Error('Could not parse data from source');
+        return { currentPrice, sma200 };
+    }
+
+    async function fetchData() {
+        const btn = document.getElementById('refreshBtn');
+        btn.disabled = true;
+        btn.textContent = 'Refreshing…';
+        hideError();
+        resetSignalCard();
+
+        try {
+            const symbol = document.getElementById('indexSelect').value;
+            const data   = await fetchBarchartData(symbol);
+            const buyT   = parseFloat(document.getElementById('buyThreshold').value)  || 4;
+            const sellT  = parseFloat(document.getElementById('sellThreshold').value) || 3;
+            const result = determineSignal(data.currentPrice, data.sma200, buyT, sellT);
+            renderData(data.currentPrice, data.sma200, result);
+            setLastUpdated();
+        } catch (err) {
+            showError(err.message);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Refresh Signal';
+        }
+    }
+
+    // ── Render ────────────────────────────────────────────────────
+    function renderData(price, sma, result) {
+        const card = document.getElementById('signalCard');
+        card.className = 'signal-card ' + result.cls;
+        document.getElementById('signalValue').textContent = result.signal;
+
+        const pctEl = document.getElementById('signalPct');
+        const sign  = result.pct > 0 ? '+' : '';
+        pctEl.textContent   = `${sign}${result.pct.toFixed(2)}% from SMA`;
+        pctEl.style.display = 'block';
+
+        document.getElementById('currentLevel').textContent = fmt(price);
+        document.getElementById('smaValue').textContent     = fmt(sma);
+
+        const diff   = price - sma;
+        const diffEl = document.getElementById('difference');
+        diffEl.textContent = (diff >= 0 ? '+' : '') + fmt(diff);
+        diffEl.style.color = diff >= 0 ? 'var(--buy-text)' : 'var(--sell-text)';
+
+        document.getElementById('dataCard').style.display = 'block';
+        renderBar(result.pct);
+    }
+
+    function renderBar(pct) {
+        document.getElementById('thresholdBar').style.display = 'block';
+        const minPct  = -10, maxPct = 50;
+        const clamped = Math.max(minPct, Math.min(maxPct, pct));
+        const pos     = ((clamped - minPct) / (maxPct - minPct)) * 100;
+        document.getElementById('barMarker').style.left = pos + '%';
+    }
+
+    function fmt(n) {
+        return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function resetSignalCard() {
+        const card = document.getElementById('signalCard');
+        card.className = 'signal-card empty';
+        document.getElementById('signalValue').textContent  = '—';
+        document.getElementById('signalPct').style.display  = 'none';
+        document.getElementById('dataCard').style.display   = 'none';
+        document.getElementById('thresholdBar').style.display = 'none';
+    }
+
+    function setLastUpdated() {
+        const time = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        document.getElementById('lastUpdated').textContent = `Updated ${time}`;
+    }
+
+    function showError(msg) {
+        const el = document.getElementById('errorCard');
+        document.getElementById('errorMsg').textContent = msg;
+        el.style.display = 'block';
+        resetSignalCard();
+    }
+
+    function hideError() {
+        document.getElementById('errorCard').style.display = 'none';
+    }
+
+    // ── Init ──────────────────────────────────────────────────────
+    window.onload = function () {
+        loadSettings();
+        setTimeout(fetchData, 400);
+    };
+</script>
+</body>
+</html>
