@@ -4,993 +4,820 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>SMA Alerts</title>
-    <!-- Icon references removed - icon.svg doesn't exist and was causing Capacitor asset loading errors -->
     <style>
         :root {
-            /* Default Light Theme */
-            --bg-primary: #f8f9fa;
-            --bg-secondary: #ffffff;
-            --bg-accent: #e9ecef;
-            --text-primary: #212529;
-            --text-secondary: #6c757d;
-            --text-muted: #adb5bd;
-            --border-color: #dee2e6;
-            --shadow: 0 2px 10px rgba(0,0,0,0.1);
-            --shadow-hover: 0 4px 20px rgba(0,0,0,0.15);
-            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --gradient-success: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            --gradient-danger: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
-            --gradient-warning: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            --gradient-info: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --bg: #f2f2f7;
+            --surface: #ffffff;
+            --surface-2: #f2f2f7;
+            --border: rgba(0,0,0,0.08);
+            --text: #1c1c1e;
+            --text-2: #3a3a3c;
+            --text-3: #8e8e93;
+            --accent: #007aff;
+            --buy: #34c759;
+            --buy-bg: #e8faf0;
+            --buy-text: #1a7a37;
+            --sell: #ff3b30;
+            --sell-bg: #fff0ef;
+            --sell-text: #c0392b;
+            --hold: #ff9500;
+            --hold-bg: #fff8ed;
+            --hold-text: #9a5e00;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+            --shadow: 0 2px 12px rgba(0,0,0,0.08);
+            --radius: 16px;
+            --radius-sm: 10px;
         }
 
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #000000;
+                --surface: #1c1c1e;
+                --surface-2: #2c2c2e;
+                --border: rgba(255,255,255,0.08);
+                --text: #ffffff;
+                --text-2: #ebebf5;
+                --text-3: #8e8e93;
+                --buy-bg: #0d2e18;
+                --buy-text: #4cd97d;
+                --sell-bg: #2d100e;
+                --sell-text: #ff6b63;
+                --hold-bg: #2c1f00;
+                --hold-text: #ffb340;
+                --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+                --shadow: 0 2px 12px rgba(0,0,0,0.3);
+            }
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 10px;
-            padding-top: calc(10px + env(safe-area-inset-top));
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            transition: all 0.3s ease;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
             min-height: 100vh;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* Responsive design */
-        @media (max-width: 768px) {
-            body {
-                padding: 5px;
-                padding-top: calc(5px + env(safe-area-inset-top));
-            }
+        .page {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 16px 16px 32px;
         }
 
-        @media (max-width: 480px) {
-            body {
-                padding: 2px;
-                padding-top: calc(2px + env(safe-area-inset-top));
-            }
-        }
-        .container {
-            background: var(--bg-secondary);
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border-color);
-            transition: all 0.3s ease;
+        /* ── Header ── */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0 20px;
         }
 
-        .container:hover {
-            box-shadow: var(--shadow-hover);
-            transform: translateY(-1px);
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 15px;
-                border-radius: 12px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 10px;
-                border-radius: 10px;
-            }
-        }
-
-        h1 {
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-align: center;
-            margin-top: 10px;
-            margin-bottom: 20px;
-            font-size: 1.8rem;
+        .header-title {
+            font-size: 22px;
             font-weight: 700;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            color: var(--text);
+            letter-spacing: -0.5px;
         }
 
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 1.5rem;
-                margin-bottom: 15px;
-            }
+        .header-subtitle {
+            font-size: 13px;
+            color: var(--text-3);
+            margin-top: 2px;
         }
 
-        @media (max-width: 480px) {
-            h1 {
-                font-size: 1.3rem;
-                margin-bottom: 10px;
-            }
+        .settings-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            flex-shrink: 0;
+            transition: opacity 0.15s;
         }
 
+        .settings-btn:active { opacity: 0.6; }
 
-        .settings {
-            background: var(--bg-accent);
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            border: 1px solid var(--border-color);
+        /* ── Signal Hero ── */
+        .signal-card {
+            border-radius: var(--radius);
+            padding: 28px 24px;
+            text-align: center;
+            margin-bottom: 12px;
+            transition: background 0.3s, box-shadow 0.3s;
+            box-shadow: var(--shadow);
         }
 
-        @media (max-width: 768px) {
-            .settings {
-                padding: 12px;
-                margin-bottom: 12px;
-            }
+        .signal-card.buy  { background: var(--buy-bg); }
+        .signal-card.sell, .signal-card.sell-80, .signal-card.sell-all { background: var(--sell-bg); }
+        .signal-card.hold { background: var(--hold-bg); }
+        .signal-card.empty {
+            background: var(--surface);
+            border: 1px dashed var(--border);
+            box-shadow: none;
         }
 
-        @media (max-width: 480px) {
-            .settings {
-                padding: 10px;
-                margin-bottom: 10px;
-            }
+        .signal-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-3);
+            margin-bottom: 8px;
         }
 
-        .setting-group {
+        .signal-value {
+            font-size: 48px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            line-height: 1;
+        }
+
+        .signal-card.buy  .signal-value  { color: var(--buy-text); }
+        .signal-card.sell .signal-value,
+        .signal-card.sell-80 .signal-value,
+        .signal-card.sell-all .signal-value { color: var(--sell-text); }
+        .signal-card.hold .signal-value { color: var(--hold-text); }
+        .signal-card.empty .signal-value { color: var(--text-3); font-size: 32px; font-weight: 600; }
+
+        .signal-pct {
+            font-size: 15px;
+            font-weight: 500;
+            margin-top: 8px;
+            opacity: 0.75;
+        }
+
+        .signal-card.buy  .signal-pct  { color: var(--buy-text); }
+        .signal-card.sell .signal-pct,
+        .signal-card.sell-80 .signal-pct,
+        .signal-card.sell-all .signal-pct { color: var(--sell-text); }
+        .signal-card.hold .signal-pct { color: var(--hold-text); }
+
+        /* ── Data rows ── */
+        .data-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
             margin-bottom: 12px;
         }
 
-        @media (max-width: 768px) {
-            .setting-group {
-                margin-bottom: 10px;
-            }
+        .data-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 13px 16px;
+            border-bottom: 1px solid var(--border);
         }
 
-        label {
-            display: inline-block;
-            width: 180px;
+        .data-row:last-child { border-bottom: none; }
+
+        .data-row-label {
+            font-size: 15px;
+            color: var(--text-2);
+        }
+
+        .data-row-value {
+            font-size: 15px;
             font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 3px;
-            font-size: 14px;
+            color: var(--text);
+            font-variant-numeric: tabular-nums;
         }
 
-        @media (max-width: 768px) {
-            label {
-                width: 150px;
-                font-size: 13px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            label {
-                width: 120px;
-                font-size: 12px;
-            }
-        }
-
-        input[type="number"], input[type="text"], input[type="password"], select {
-            width: 180px;
-            padding: 8px 12px;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            font-size: 13px;
-            transition: all 0.3s ease;
-        }
-
-        @media (max-width: 768px) {
-            input[type="number"], input[type="text"], input[type="password"], select {
-                width: 150px;
-                padding: 6px 10px;
-                font-size: 12px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            input[type="number"], input[type="text"], input[type="password"], select {
-                width: 120px;
-                padding: 5px 8px;
-                font-size: 11px;
-            }
-        }
-
-        input[type="number"]:focus, input[type="text"]:focus, input[type="password"]:focus, select:focus {
-            outline: none;
-            border-color: var(--text-secondary);
-            box-shadow: 0 0 0 3px rgba(0,0,0,0.1);
-            transform: translateY(-1px);
-        }
-
-        button {
-            background: var(--gradient-primary);
-            color: white;
-            padding: 10px 20px;
+        /* ── Refresh button ── */
+        .refresh-btn {
+            width: 100%;
+            padding: 15px;
+            background: var(--accent);
+            color: #fff;
             border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 14px;
+            border-radius: var(--radius);
+            font-size: 16px;
             font-weight: 600;
-            box-shadow: var(--shadow);
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: opacity 0.15s, transform 0.1s;
+            font-family: inherit;
+            letter-spacing: -0.2px;
         }
 
-        @media (max-width: 768px) {
-            button {
-                padding: 8px 16px;
-                font-size: 13px;
-            }
+        .refresh-btn:active {
+            opacity: 0.85;
+            transform: scale(0.98);
         }
 
-        @media (max-width: 480px) {
-            button {
-                padding: 6px 12px;
-                font-size: 12px;
-            }
+        .refresh-btn:disabled {
+            opacity: 0.5;
+            cursor: default;
         }
 
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-hover);
+        /* ── Last updated ── */
+        .last-updated {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-3);
+            margin-bottom: 20px;
         }
 
-        button:active {
-            transform: translateY(0);
-        }
-        .data-section {
-            margin-top: 15px;
+        /* ── Error ── */
+        .error-card {
+            background: var(--sell-bg);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            font-size: 14px;
+            color: var(--sell-text);
+            margin-bottom: 12px;
+            display: none;
         }
 
-        .data-item {
+        .error-card-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        /* ── Position bar ── */
+        .threshold-bar {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .threshold-bar-label {
+            font-size: 12px;
+            color: var(--text-3);
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .bar-track {
+            position: relative;
+            height: 8px;
+            border-radius: 4px;
+            background: linear-gradient(to right,
+                var(--sell) 0%,
+                var(--sell) 15%,
+                var(--hold) 15%,
+                var(--hold) 60%,
+                var(--buy) 60%,
+                var(--buy) 80%,
+                #ff6b00 80%,
+                #ff6b00 90%,
+                #8b0000 90%,
+                #8b0000 100%
+            );
+            opacity: 0.4;
+            margin-bottom: 6px;
+        }
+
+        .bar-marker {
+            position: absolute;
+            top: -4px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--text);
+            border: 2px solid var(--surface);
+            box-shadow: var(--shadow-sm);
+            transform: translateX(-50%);
+            transition: left 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .bar-zones {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            padding: 10px 15px;
-            margin-bottom: 8px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            transition: all 0.3s ease;
+            font-size: 10px;
+            color: var(--text-3);
+            margin-top: 4px;
         }
 
-        @media (max-width: 768px) {
-            .data-item {
-                padding: 8px 12px;
-                margin-bottom: 6px;
-            }
+        /* ── Settings overlay ── */
+        .settings-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 100;
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
         }
 
-        @media (max-width: 480px) {
-            .data-item {
-                padding: 6px 10px;
-                margin-bottom: 5px;
-            }
+        .settings-overlay.open { display: flex; align-items: flex-end; }
+
+        .settings-sheet {
+            background: var(--surface);
+            border-radius: 20px 20px 0 0;
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            padding-bottom: env(safe-area-inset-bottom);
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+            max-height: 85vh;
+            overflow-y: auto;
+            animation: slideUp 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
-        .data-item:hover {
-            transform: translateX(5px);
-            box-shadow: var(--shadow);
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to   { transform: translateY(0); }
         }
 
-        .data-label {
-            font-weight: 600;
-            color: var(--text-primary);
-            font-size: 14px;
+        .sheet-handle {
+            width: 36px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            margin: 10px auto 20px;
         }
 
-        .data-value {
-            color: var(--text-secondary);
-            font-weight: 500;
-            font-size: 14px;
-        }
-
-        @media (max-width: 768px) {
-            .data-label, .data-value {
-                font-size: 13px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .data-label, .data-value {
-                font-size: 12px;
-            }
-        }
-        .signal {
-            text-align: center;
-            padding: 14px;
-            margin: 10px 0;
-            border-radius: 15px;
+        .sheet-title {
             font-size: 18px;
             font-weight: 700;
-            box-shadow: var(--shadow);
-            transition: all 0.3s ease;
-            position: relative;
+            padding: 0 20px 16px;
+            color: var(--text);
+            letter-spacing: -0.3px;
+        }
+
+        .settings-group {
+            margin-bottom: 8px;
+        }
+
+        .settings-group-label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-3);
+            padding: 0 20px 6px;
+        }
+
+        .settings-rows {
+            background: var(--surface-2);
+            border-radius: var(--radius-sm);
+            margin: 0 16px;
             overflow: hidden;
         }
 
-        @media (max-width: 768px) {
-            .signal {
-                padding: 12px;
-                margin: 8px 0;
-                font-size: 16px;
-            }
+        .settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            gap: 12px;
         }
 
-        @media (max-width: 480px) {
-            .signal {
-                padding: 10px;
-                margin: 6px 0;
-                font-size: 14px;
-            }
+        .settings-row:last-child { border-bottom: none; }
+
+        .settings-row-label {
+            font-size: 15px;
+            color: var(--text);
+            flex: 1;
         }
 
-        .signal::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
+        .settings-row-hint {
+            font-size: 12px;
+            color: var(--text-3);
+            margin-top: 1px;
         }
 
-        .signal:hover::before {
-            left: 100%;
+        .settings-input {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 15px;
+            color: var(--text);
+            font-family: inherit;
+            text-align: right;
+            width: 80px;
+            font-variant-numeric: tabular-nums;
         }
 
-        .signal.buy {
-            background: var(--gradient-success);
-            color: white;
+        .settings-select {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 15px;
+            color: var(--text);
+            font-family: inherit;
+            max-width: 160px;
+        }
+
+        .settings-input:focus,
+        .settings-select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .notif-time-row {
+            transition: max-height 0.2s ease, opacity 0.2s ease;
+            overflow: hidden;
+            max-height: 60px;
+        }
+
+        .notif-time-row.hidden {
+            max-height: 0;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .sheet-done-btn {
+            display: block;
+            width: calc(100% - 32px);
+            margin: 16px 16px 8px;
+            padding: 14px;
+            background: var(--accent);
+            color: #fff;
             border: none;
-            animation: pulse 2s infinite;
-        }
-
-        .signal.sell {
-            background: var(--gradient-danger);
-            color: white;
-            border: none;
-            animation: shake 0.5s ease-in-out;
-        }
-
-        .signal.hold {
-            background: var(--gradient-warning);
-            color: white;
-            border: none;
-        }
-
-        .signal.sell-80 {
-            background: var(--gradient-danger);
-            color: white;
-            border: none;
-            animation: pulse 1.5s infinite;
-        }
-
-        .signal.sell-all {
-            background: var(--gradient-danger);
-            color: white;
-            border: none;
-            animation: shake 0.8s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-        .loading {
-            text-align: center;
-            color: var(--text-secondary);
-            font-style: italic;
-            font-size: 14px;
-            padding: 15px;
-            background: var(--bg-accent);
-            border-radius: 12px;
-            margin: 15px 0;
-        }
-
-        .error {
-            background: var(--gradient-danger);
-            color: white;
-            padding: 15px;
-            border-radius: 12px;
-            margin: 15px 0;
+            border-radius: var(--radius-sm);
+            font-size: 16px;
             font-weight: 600;
-            box-shadow: var(--shadow);
-            animation: shake 0.5s ease-in-out;
-            font-size: 14px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: opacity 0.15s;
         }
 
-        @media (max-width: 768px) {
-            .loading, .error {
-                font-size: 13px;
-                padding: 12px;
-                margin: 12px 0;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .loading, .error {
-                font-size: 12px;
-                padding: 10px;
-                margin: 10px 0;
-            }
-        }
-
-        small {
-            color: var(--text-muted);
-            font-size: 11px;
-        }
-
-        @media (max-width: 768px) {
-            small {
-                font-size: 10px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            small {
-                font-size: 9px;
-            }
-        }
-
-        /* Additional responsive improvements */
-        @media (max-width: 768px) {
-            .setting-group {
-                display: flex;
-                flex-direction: column;
-                gap: 5px;
-            }
-            
-            label {
-                width: 100%;
-                margin-bottom: 2px;
-            }
-            
-            input[type="number"], input[type="text"], input[type="password"], select {
-                width: 100%;
-                max-width: 250px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .data-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 5px;
-            }
-            
-            .data-value {
-                align-self: flex-end;
-            }
-        }
+        .sheet-done-btn:active { opacity: 0.8; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1 id="pageTitle" style="margin-top: 10px;">SMA Signal Strategy</h1>
-        
-        <div class="settings">
-            <h3 style="font-size: 14px; margin-bottom: 8px;">Configuration</h3>
-            <div class="setting-group">
-                <label for="indexSelect">Index to Track:</label>
-                <select id="indexSelect" onchange="onIndexChange()" style="width: 200px; padding: 5px; border: 1px solid #ddd; border-radius: 3px;">
-                    <option value="$SPX" selected>S&P 500 ($SPX)</option>
-                    <option value="$NASX">NASDAQ ($NASX)</option>
-                    <option value="URTH">MSCI World (URTH)</option>
-                </select>
-            </div>
-            <div class="setting-group">
-                <label for="buyThreshold">Buy Signal (% above SMA):</label>
-                <input type="number" id="buyThreshold" value="4" step="0.1" min="0" max="100">
-            </div>
-            <div class="setting-group">
-                <label for="sellThreshold">Sell Signal (% below SMA):</label>
-                <input type="number" id="sellThreshold" value="3" step="0.1" min="0" max="100">
-            </div>
-            <div class="setting-group">
-                <label>Notifications:</label>
-                <div style="display:flex; flex-direction:column; gap:6px;">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <label for="notifFrequency" style="width:auto;">Notification frequency:</label>
-                        <select id="notifFrequency" style="flex:1;">
-                            <option value="disabled">Disabled</option>
-                            <option value="on_change" selected>Only on signal change</option>
-                            <option value="daily">Daily (always)</option>
-                        </select>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <label for="notifTime" style="width:auto;">Notification time (your timezone):</label>
-                        <input type="time" id="notifTime">
-                    </div>
-                </div>
-            </div>
-            <button onclick="fetchData()">Generate Signal</button>
+<div class="page">
+
+    <!-- Header -->
+    <div class="header">
+        <div>
+            <div class="header-title" id="headerTitle">SMA Signals</div>
+            <div class="header-subtitle">200-day moving average</div>
         </div>
-
-        <div class="data-section">
-            <h3 style="font-size: 14px; margin-bottom: 8px;">Current Data</h3>
-            <div id="loading" class="loading" style="display: none;">Loading data...</div>
-            <div id="error" class="error" style="display: none;"></div>
-            
-            <div id="dataDisplay" style="display: none;">
-            <div class="data-item">
-                <span class="data-label" id="indexLabel">S&P 500 Current Level:</span>
-                <span class="data-value" id="currentLevel">-</span>
-            </div>
-                <div class="data-item">
-                    <span class="data-label">200-Day SMA:</span>
-                    <span class="data-value" id="smaValue">-</span>
-                </div>
-                <div class="data-item">
-                    <span class="data-label">Difference from SMA:</span>
-                    <span class="data-value" id="difference">-</span>
-                </div>
-                <div class="data-item">
-                    <span class="data-label">Percentage from SMA:</span>
-                    <span class="data-value" id="percentage">-</span>
-                </div>
-            </div>
-
-            <div id="tradingSignal" class="signal" style="display: none;">
-                <div id="signalText">-</div>
-            </div>
+        <div class="settings-btn" onclick="openSettings()" title="Settings">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
         </div>
     </div>
 
-    <script>
-        // Simple obfuscation functions
-        function obfuscateKey(key) {
-            return btoa(key.split('').reverse().join(''));
+    <!-- Signal Hero -->
+    <div class="signal-card empty" id="signalCard">
+        <div class="signal-label">Signal</div>
+        <div class="signal-value" id="signalValue">—</div>
+        <div class="signal-pct" id="signalPct" style="display:none"></div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-card" id="errorCard">
+        <div class="error-card-title">Couldn't load data</div>
+        <div id="errorMsg"></div>
+    </div>
+
+    <!-- Refresh -->
+    <button class="refresh-btn" id="refreshBtn" onclick="fetchData()">Refresh Signal</button>
+
+    <!-- Last updated -->
+    <div class="last-updated" id="lastUpdated"></div>
+
+    <!-- Data rows -->
+    <div class="data-card" id="dataCard" style="display:none">
+        <div class="data-row">
+            <span class="data-row-label" id="indexLabel">Index</span>
+            <span class="data-row-value" id="currentLevel">—</span>
+        </div>
+        <div class="data-row">
+            <span class="data-row-label">200-Day SMA</span>
+            <span class="data-row-value" id="smaValue">—</span>
+        </div>
+        <div class="data-row">
+            <span class="data-row-label">Distance from SMA</span>
+            <span class="data-row-value" id="difference">—</span>
+        </div>
+    </div>
+
+    <!-- Position bar -->
+    <div class="threshold-bar" id="thresholdBar" style="display:none">
+        <div class="threshold-bar-label">Position relative to SMA</div>
+        <div class="bar-track">
+            <div class="bar-marker" id="barMarker"></div>
+        </div>
+        <div class="bar-zones">
+            <span>SELL</span>
+            <span>HOLD</span>
+            <span>BUY</span>
+            <span>SELL 80%</span>
+            <span>SELL ALL</span>
+        </div>
+    </div>
+
+</div>
+
+<!-- Settings overlay -->
+<div class="settings-overlay" id="settingsOverlay" onclick="overlayClick(event)">
+    <div class="settings-sheet" id="settingsSheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">Settings</div>
+
+        <div class="settings-group">
+            <div class="settings-group-label">Market</div>
+            <div class="settings-rows">
+                <div class="settings-row">
+                    <div class="settings-row-label">Index</div>
+                    <select class="settings-select" id="indexSelect" onchange="onIndexChange()">
+                        <option value="$SPX">S&amp;P 500</option>
+                        <option value="$NASX">NASDAQ</option>
+                        <option value="URTH">MSCI World</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-group">
+            <div class="settings-group-label">Signal Thresholds</div>
+            <div class="settings-rows">
+                <div class="settings-row">
+                    <div>
+                        <div class="settings-row-label">Buy above SMA</div>
+                        <div class="settings-row-hint">Default: 4%</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:4px">
+                        <input class="settings-input" type="number" id="buyThreshold" value="4" step="0.1" min="0" max="100">
+                        <span style="font-size:15px;color:var(--text-3)">%</span>
+                    </div>
+                </div>
+                <div class="settings-row">
+                    <div>
+                        <div class="settings-row-label">Sell below SMA</div>
+                        <div class="settings-row-hint">Default: 3%</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:4px">
+                        <input class="settings-input" type="number" id="sellThreshold" value="3" step="0.1" min="0" max="100">
+                        <span style="font-size:15px;color:var(--text-3)">%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-group">
+            <div class="settings-group-label">Notifications</div>
+            <div class="settings-rows">
+                <div class="settings-row">
+                    <div class="settings-row-label">Frequency</div>
+                    <select class="settings-select" id="notifFrequency" onchange="onNotifFreqChange()">
+                        <option value="disabled">Off</option>
+                        <option value="on_change" selected>On signal change</option>
+                        <option value="daily">Daily</option>
+                    </select>
+                </div>
+                <div class="settings-row notif-time-row" id="notifTimeRow">
+                    <div class="settings-row-label">Alert time</div>
+                    <input class="settings-input" type="time" id="notifTime" style="width:auto;text-align:right">
+                </div>
+            </div>
+        </div>
+
+        <button class="sheet-done-btn" onclick="closeSettings()">Done</button>
+    </div>
+</div>
+
+<script>
+    const INDEX = {
+        '$SPX':  { name: 'S&P 500',    label: 'S&P 500 ($SPX)' },
+        '$NASX': { name: 'NASDAQ',     label: 'NASDAQ ($NASX)' },
+        'URTH':  { name: 'MSCI World', label: 'MSCI World (URTH)' },
+    };
+
+    // ── Settings ──────────────────────────────────────────────────
+    function loadSettings() {
+        const buy  = localStorage.getItem('buyThreshold');
+        const sell = localStorage.getItem('sellThreshold');
+        const idx  = localStorage.getItem('selectedIndex');
+        const freq = localStorage.getItem('notifFrequency');
+        const hour = localStorage.getItem('notifHour');
+        const min  = localStorage.getItem('notifMinute');
+
+        if (buy)  document.getElementById('buyThreshold').value  = buy;
+        if (sell) document.getElementById('sellThreshold').value = sell;
+        document.getElementById('indexSelect').value = idx || '$SPX';
+
+        const oldEnabled = localStorage.getItem('notifEnabled');
+        if (freq) {
+            document.getElementById('notifFrequency').value = freq;
+        } else if (oldEnabled === 'false') {
+            document.getElementById('notifFrequency').value = 'disabled';
+        } else {
+            document.getElementById('notifFrequency').value = 'on_change';
         }
 
-        function deobfuscateKey(obfuscatedKey) {
+        if (hour && min) {
+            document.getElementById('notifTime').value =
+                `${String(hour).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
+        } else {
+            document.getElementById('notifTime').value = defaultNotifTime();
+        }
+
+        updateNotifTimeVisibility();
+        updateHeaderLabel();
+    }
+
+    function saveSettings() {
+        localStorage.setItem('buyThreshold',   document.getElementById('buyThreshold').value);
+        localStorage.setItem('sellThreshold',  document.getElementById('sellThreshold').value);
+        localStorage.setItem('selectedIndex',  document.getElementById('indexSelect').value);
+        localStorage.setItem('notifFrequency', document.getElementById('notifFrequency').value);
+
+        const timeVal = document.getElementById('notifTime').value || '15:30';
+        const [h, m]  = timeVal.split(':');
+        localStorage.setItem('notifHour',   String(parseInt(h || '15', 10)));
+        localStorage.setItem('notifMinute', String(parseInt(m || '30', 10)));
+
+        if (window.Android && typeof window.Android.rescheduleNotifications === 'function') {
+            try { window.Android.rescheduleNotifications(); } catch (_) {}
+        }
+    }
+
+    function defaultNotifTime() {
+        const now    = new Date();
+        const month  = now.getMonth();
+        const isDST  = month >= 2 && month <= 10;
+        const offset = isDST ? 4 : 5;
+        const yyyy   = now.getFullYear();
+        const mm     = String(now.getMonth() + 1).padStart(2,'0');
+        const dd     = String(now.getDate()).padStart(2,'0');
+        const t      = new Date(`${yyyy}-${mm}-${dd}T15:30:00-0${offset}:00`);
+        return `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
+    }
+
+    // ── Settings sheet ────────────────────────────────────────────
+    function openSettings() {
+        document.getElementById('settingsOverlay').classList.add('open');
+    }
+
+    function closeSettings() {
+        saveSettings();
+        document.getElementById('settingsOverlay').classList.remove('open');
+    }
+
+    function overlayClick(e) {
+        if (e.target === document.getElementById('settingsOverlay')) closeSettings();
+    }
+
+    function onIndexChange() {
+        updateHeaderLabel();
+        saveSettings();
+        fetchData();
+    }
+
+    function onNotifFreqChange() {
+        updateNotifTimeVisibility();
+    }
+
+    function updateNotifTimeVisibility() {
+        const freq = document.getElementById('notifFrequency').value;
+        document.getElementById('notifTimeRow').classList.toggle('hidden', freq === 'disabled');
+    }
+
+    function updateHeaderLabel() {
+        const idx = document.getElementById('indexSelect').value;
+        const cfg = INDEX[idx] || INDEX['$SPX'];
+        document.getElementById('headerTitle').textContent  = cfg.name + ' SMA';
+        document.getElementById('indexLabel').textContent   = cfg.label;
+    }
+
+    // ── Signal logic ──────────────────────────────────────────────
+    function determineSignal(price, sma, buyT, sellT) {
+        const pct = ((price - sma) / sma) * 100;
+        if (pct >= 40)     return { signal: 'SELL ALL', cls: 'sell-all', pct };
+        if (pct >= 30)     return { signal: 'SELL 80%', cls: 'sell-80',  pct };
+        if (pct >= buyT)   return { signal: 'BUY',      cls: 'buy',      pct };
+        if (pct <= -sellT) return { signal: 'SELL',     cls: 'sell',     pct };
+        return                    { signal: 'HOLD',     cls: 'hold',     pct };
+    }
+
+    // ── Data fetch ────────────────────────────────────────────────
+    async function fetchBarchartData(symbol) {
+        if (window.Android && typeof window.Android.getHistoricalData === 'function') {
             try {
-                return atob(obfuscatedKey).split('').reverse().join('');
-            } catch (e) {
-                return '';
-            }
-        }
-
-        // Cookie management functions
-        function setCookie(name, value, days = 365) {
-            const expires = new Date();
-            expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
-            // Remove secure flag for local file access and use more permissive settings
-            document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
-        }
-
-        function getCookie(name) {
-            const nameEQ = name + "=";
-            const ca = document.cookie.split(';');
-            for (let i = 0; i < ca.length; i++) {
-                let c = ca[i];
-                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-                if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-            }
-            return null;
-        }
-
-        function deleteCookie(name) {
-            document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
-        }
-
-        // Index configuration
-        const indexConfig = {
-            '$SPX': {
-                symbol: '$SPX',
-                name: 'S&P 500',
-                fullName: 'S&P 500 ($SPX)'
-            },
-            '$NASX': {
-                symbol: '$NASX',
-                name: 'NASDAQ',
-                fullName: 'NASDAQ ($NASX)'
-            },
-            'URTH': {
-                symbol: 'URTH',
-                name: 'MSCI World',
-                fullName: 'MSCI World (URTH)'
-            }
-        };
-
-        // Update UI labels based on selected index
-        function updateIndexLabels() {
-            const selectedIndex = document.getElementById('indexSelect').value;
-            const config = indexConfig[selectedIndex];
-            
-            document.getElementById('pageTitle').textContent = 'SMA Signal Strategy';
-            document.getElementById('indexLabel').textContent = `${config.name} Current Level:`;
-            // SMA is always 200-day now, no need to update label
-        }
-
-        // Handle index change - update labels and auto-generate signal
-        function onIndexChange() {
-            updateIndexLabels();
-            saveSettings();
-            // Auto-generate signal when index changes (no API key needed)
-            fetchData();
-        }
-
-        // Get default notification time (30 min before NYSE close = 3:30 PM EST/EDT in user's timezone)
-        function getDefaultNotificationTime() {
-            // Create a date representing 3:30 PM in NY timezone
-            const now = new Date();
-            const nyDateStr = now.toLocaleString("en-US", {timeZone: "America/New_York"});
-            const nyDateParts = new Date(nyDateStr);
-            
-            // Create a date for 3:30 PM in NY timezone
-            const year = nyDateParts.getFullYear();
-            const monthNum = nyDateParts.getMonth();
-            const month = String(monthNum + 1).padStart(2, '0');
-            const day = String(nyDateParts.getDate()).padStart(2, '0');
-            
-            // Create a date that represents 3:30 PM in NY timezone
-            // Use JavaScript's built-in timezone handling for DST
-            const nyTime = new Date(`${year}-${month}-${day}T15:30:00`);
-            
-            // Get the timezone offset for NY on this specific date
-            // Determine if NY is in DST by checking the month (simplified approach)
-            const isDST = monthNum >= 2 && monthNum <= 10; // DST roughly March-November
-            const offsetHours = isDST ? 4 : 5; // EDT is UTC-4, EST is UTC-5
-            
-            // Create ISO string with correct offset
-            const nyTimeISO = `${year}-${month}-${day}T15:30:00-0${offsetHours}:00`;
-            
-            // Parse this to get user's local time
-            const userTime = new Date(nyTimeISO);
-            
-            const hh = String(userTime.getHours()).padStart(2, '0');
-            const mm = String(userTime.getMinutes()).padStart(2, '0');
-            return `${hh}:${mm}`;
-        }
-
-        // Load saved settings from localStorage and cookies
-        function loadSettings() {
-            const buyThreshold = localStorage.getItem('buyThreshold');
-            const sellThreshold = localStorage.getItem('sellThreshold');
-            const selectedIndex = localStorage.getItem('selectedIndex');
-            // SMA period is always 200 now, no need to load it
-            // Notification settings
-            const notifFrequency = localStorage.getItem('notifFrequency');
-            const notifHour = localStorage.getItem('notifHour');
-            const notifMinute = localStorage.getItem('notifMinute');
-            
-            // API key is no longer needed, removed
-            
-            if (buyThreshold) document.getElementById('buyThreshold').value = buyThreshold;
-            if (sellThreshold) document.getElementById('sellThreshold').value = sellThreshold;
-            if (selectedIndex) {
-                document.getElementById('indexSelect').value = selectedIndex;
-            } else {
-                // Default to $SPX if no selection saved
-                document.getElementById('indexSelect').value = '$SPX';
-            }
-            // Apply notification settings with defaults
-            // Migrate old notifEnabled to new frequency system for backward compatibility
-            const oldNotifEnabled = localStorage.getItem('notifEnabled');
-            if (notifFrequency) {
-                document.getElementById('notifFrequency').value = notifFrequency;
-            } else if (oldNotifEnabled === 'false') {
-                document.getElementById('notifFrequency').value = 'disabled';
-            } else {
-                document.getElementById('notifFrequency').value = 'on_change'; // default
-            }
-            
-            // Use saved time or default to 30 min before NYSE close in user's timezone
-            let timeValue;
-            if (notifHour && notifMinute) {
-                const hh = String(notifHour).padStart(2, '0');
-                const mm = String(notifMinute).padStart(2, '0');
-                timeValue = `${hh}:${mm}`;
-            } else {
-                timeValue = getDefaultNotificationTime();
-            }
-            document.getElementById('notifTime').value = timeValue;
-            
-            // API key is no longer needed, removed
-            
-            updateIndexLabels();
-        }
-
-        // Save settings to localStorage and cookies
-        function saveSettings() {
-            localStorage.setItem('buyThreshold', document.getElementById('buyThreshold').value);
-            localStorage.setItem('sellThreshold', document.getElementById('sellThreshold').value);
-            localStorage.setItem('selectedIndex', document.getElementById('indexSelect').value);
-            // SMA period is always 200 now, no need to save it
-            // Save notification settings
-            localStorage.setItem('notifFrequency', document.getElementById('notifFrequency').value);
-            const timeVal = document.getElementById('notifTime').value || '15:30';
-            const [hStr, mStr] = timeVal.split(':');
-            localStorage.setItem('notifHour', String(parseInt(hStr || '15', 10)));
-            localStorage.setItem('notifMinute', String(parseInt(mStr || '30', 10)));
-            
-            // Notify Android to reschedule notifications when time/frequency changes
-            console.log('Checking for Android interface...');
-            console.log('window.Android:', window.Android);
-            if (window.Android && typeof window.Android.rescheduleNotifications === 'function') {
-                console.log('Calling window.Android.rescheduleNotifications()');
-                try {
-                    window.Android.rescheduleNotifications();
-                    console.log('Successfully called rescheduleNotifications()');
-                } catch (e) {
-                    console.error('Error calling rescheduleNotifications():', e);
+                const raw = window.Android.getHistoricalData(symbol);
+                if (raw && raw.trim()) {
+                    const data = JSON.parse(raw);
+                    if (data.currentPrice && data.sma200) return data;
                 }
-            } else {
-                console.warn('Android interface not available. window.Android:', window.Android);
-                if (window.Android) {
-                    console.warn('window.Android.rescheduleNotifications type:', typeof window.Android.rescheduleNotifications);
-                }
-            }
-            
-            // API key is no longer needed, removed
+            } catch (_) {}
         }
 
-        // Fetch current price and 200-day SMA from barchart.com
-        async function fetchBarchartData(symbol) {
-            try {
-                console.log('Fetching data from barchart.com for symbol:', symbol);
-                
-                // Always try Android interface first (more reliable in WebView)
-                if (window.Android && typeof window.Android.getHistoricalData === 'function') {
-                    console.log('Using Android interface to fetch data from barchart.com');
-                    try {
-                        const dataStr = window.Android.getHistoricalData(symbol);
-                        console.log('Android interface returned:', dataStr);
-                        if (dataStr && dataStr.trim() !== '') {
-                            const data = JSON.parse(dataStr);
-                            if (data.currentPrice && data.sma200) {
-                                console.log('Successfully fetched data via Android interface - Price:', data.currentPrice, ', SMA200:', data.sma200);
-                                return data;
-                            } else {
-                                console.warn('Android interface returned data but missing fields:', data);
-                            }
-                        } else {
-                            console.warn('Android interface returned empty string');
-                        }
-                    } catch (error) {
-                        console.error('Error with Android interface:', error);
-                        console.error('Error details:', error.message, error.stack);
-                    }
-                } else {
-                    console.warn('Android interface not available - window.Android:', typeof window.Android);
-                    if (window.Android) {
-                        console.warn('getHistoricalData type:', typeof window.Android.getHistoricalData);
-                    }
-                }
-                
-                // If we get here, Android interface failed or is not available
-                // Try fetch API as fallback (may fail in WebView due to CORS)
-                console.log('Attempting fetch API as fallback (may fail in WebView)');
-                const url = `https://www.barchart.com/stocks/quotes/${symbol}/technical-analysis`;
-                
-                try {
-                    const response = await fetch(url, {
-                        headers: {
-                            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-                            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
-                        }
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error(`Barchart.com API returned error: ${response.status} ${response.statusText}`);
-                    }
-                    
-                    const html = await response.text();
-                    
-                    // Extract current price from JSON data in script tag
-                    let currentPrice = 0;
-                    try {
-                        // Try to match "lastPrice":23413.67 or "lastPrice":"23,413.67" or "lastPrice": "23413.67"
-                        // Pattern: "lastPrice": followed by optional whitespace, optional quote, number with commas and decimals, optional quote
-                        // Use a more explicit pattern that handles quoted strings properly
-                        let bcDataMatch = html.match(/"lastPrice"\s*:\s*"([^"]+)"/);  // Try quoted first
-                        if (!bcDataMatch) {
-                            bcDataMatch = html.match(/"lastPrice"\s*:\s*([0-9,]+\.?[0-9]*)/);  // Try unquoted
-                        }
-                        
-                        if (bcDataMatch && bcDataMatch[1]) {
-                            // Remove commas from the number string before parsing
-                            const priceStr = bcDataMatch[1].replace(/,/g, '');
-                            currentPrice = parseFloat(priceStr);
-                            if (!isNaN(currentPrice) && currentPrice > 0) {
-                                console.log('Extracted current price:', currentPrice, 'from string:', bcDataMatch[1]);
-                            } else {
-                                console.warn('Invalid price extracted:', priceStr, 'from:', bcDataMatch[1]);
-                            }
-                        } else {
-                            console.warn('No match found for lastPrice in HTML');
-                            // Try to find any occurrence of lastPrice for debugging
-                            const debugMatch = html.match(/"lastPrice"[^}]{0,100}/);
-                            if (debugMatch) {
-                                console.warn('Found lastPrice context:', debugMatch[0]);
-                            }
-                        }
-                    } catch (error) {
-                        console.warn('Failed to extract current price from JSON', error);
-                    }
-                    
-                    // Extract 200-day SMA from HTML table
-                    let sma200 = 0;
-                    try {
-                        const smaMatch = html.match(/<td>200-Day<\/td>\s*<td[^>]*>\s*([\d,]+\.?\d*)\s*<\/td>/);
-                        if (smaMatch && smaMatch[1]) {
-                            sma200 = parseFloat(smaMatch[1].replace(/,/g, ''));
-                            console.log('Extracted 200-day SMA:', sma200);
-                        }
-                    } catch (error) {
-                        console.warn('Failed to extract 200-day SMA from HTML', error);
-                    }
-                    
-                    if (currentPrice <= 0 || sma200 <= 0) {
-                        throw new Error('Failed to extract valid data - currentPrice: ' + currentPrice + ', sma200: ' + sma200);
-                    }
-                    
-                    console.log('Successfully fetched data from barchart.com via fetch - Price:', currentPrice, ', SMA200:', sma200);
-                    return { currentPrice: currentPrice, sma200: sma200 };
-                } catch (fetchError) {
-                    console.error('Fetch API also failed:', fetchError);
-                    throw new Error('Both Android interface and fetch API failed. Android interface error: ' + 
-                                  (window.Android ? 'available but returned invalid data' : 'not available') + 
-                                  '. Fetch error: ' + fetchError.message);
-                }
-                
-            } catch (error) {
-                console.error('Error fetching data from barchart.com:', error);
-                console.error('Error details:', error.message, error.stack);
-                throw new Error('Failed to fetch data from barchart.com: ' + error.message);
-            }
+        const res = await fetch(
+            `https://www.barchart.com/stocks/quotes/${symbol}/technical-analysis`,
+            { headers: { 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' } }
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const html = await res.text();
+
+        let currentPrice = 0, sma200 = 0;
+        const priceMatch = html.match(/"lastPrice"\s*:\s*"?([0-9,]+\.?[0-9]*)"?/);
+        if (priceMatch) currentPrice = parseFloat(priceMatch[1].replace(/,/g, ''));
+        const smaMatch = html.match(/<td>200-Day<\/td>\s*<td[^>]*>\s*([\d,]+\.?\d*)\s*<\/td>/);
+        if (smaMatch) sma200 = parseFloat(smaMatch[1].replace(/,/g, ''));
+
+        if (!currentPrice || !sma200) throw new Error('Could not parse data from source');
+        return { currentPrice, sma200 };
+    }
+
+    async function fetchData() {
+        const btn = document.getElementById('refreshBtn');
+        btn.disabled = true;
+        btn.textContent = 'Refreshing…';
+        hideError();
+        resetSignalCard();
+
+        try {
+            const symbol = document.getElementById('indexSelect').value;
+            const data   = await fetchBarchartData(symbol);
+            const buyT   = parseFloat(document.getElementById('buyThreshold').value)  || 4;
+            const sellT  = parseFloat(document.getElementById('sellThreshold').value) || 3;
+            const result = determineSignal(data.currentPrice, data.sma200, buyT, sellT);
+            renderData(data.currentPrice, data.sma200, result);
+            setLastUpdated();
+        } catch (err) {
+            showError(err.message);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Refresh Signal';
         }
+    }
 
-        // Calculate SMA from daily data
-        function calculateSMA(data, period) {
-            const values = Object.values(data).map(entry => parseFloat(entry['4. close']));
-            if (values.length < period) {
-                throw new Error(`Not enough data points for ${period}-day SMA calculation`);
-            }
-            
-            const lastPeriodValues = values.slice(0, period);
-            const sum = lastPeriodValues.reduce((acc, val) => acc + val, 0);
-            return sum / period;
-        }
+    // ── Render ────────────────────────────────────────────────────
+    function renderData(price, sma, result) {
+        const card = document.getElementById('signalCard');
+        card.className = 'signal-card ' + result.cls;
+        document.getElementById('signalValue').textContent = result.signal;
 
-        // Determine trading signal based on strategy
-        function determineSignal(currentPrice, sma, buyThreshold, sellThreshold) {
-            const percentage = ((currentPrice - sma) / sma) * 100;
-            
-            if (percentage >= 40) {
-                return { signal: 'SELL ALL', class: 'sell-all', percentage: percentage };
-            } else if (percentage >= 30) {
-                return { signal: 'SELL 80%', class: 'sell-80', percentage: percentage };
-            } else if (percentage >= buyThreshold) {
-                return { signal: 'BUY', class: 'buy', percentage: percentage };
-            } else if (percentage <= -sellThreshold) {
-                return { signal: 'SELL', class: 'sell', percentage: percentage };
-            } else {
-                return { signal: 'HOLD', class: 'hold', percentage: percentage };
-            }
-        }
+        const pctEl = document.getElementById('signalPct');
+        const sign  = result.pct > 0 ? '+' : '';
+        pctEl.textContent   = `${sign}${result.pct.toFixed(2)}% from SMA`;
+        pctEl.style.display = 'block';
 
-        // Fetch data from Yahoo Finance API
-        async function fetchData() {
-            saveSettings();
-            showLoading();
+        document.getElementById('currentLevel').textContent = fmt(price);
+        document.getElementById('smaValue').textContent     = fmt(sma);
 
-            try {
-                // Get selected index symbol
-                const selectedIndex = document.getElementById('indexSelect').value;
-                const config = indexConfig[selectedIndex];
-                
-                // Fetch current price and 200-day SMA from barchart.com
-                console.log('Fetching data from barchart.com for symbol:', config.symbol);
-                const barchartData = await fetchBarchartData(config.symbol);
-                
-                if (!barchartData || !barchartData.currentPrice || !barchartData.sma200) {
-                    throw new Error('No valid data received from barchart.com');
-                }
-                
-                const currentPrice = barchartData.currentPrice;
-                const sma = barchartData.sma200;
+        const diff   = price - sma;
+        const diffEl = document.getElementById('difference');
+        diffEl.textContent = (diff >= 0 ? '+' : '') + fmt(diff);
+        diffEl.style.color = diff >= 0 ? 'var(--buy-text)' : 'var(--sell-text)';
 
-                // currentPrice and sma are already extracted from barchartData above
+        document.getElementById('dataCard').style.display = 'block';
+        renderBar(result.pct);
+    }
 
-                // Get thresholds
-                const buyThreshold = parseFloat(document.getElementById('buyThreshold').value);
-                const sellThreshold = parseFloat(document.getElementById('sellThreshold').value);
+    function renderBar(pct) {
+        document.getElementById('thresholdBar').style.display = 'block';
+        const minPct  = -10, maxPct = 50;
+        const clamped = Math.max(minPct, Math.min(maxPct, pct));
+        const pos     = ((clamped - minPct) / (maxPct - minPct)) * 100;
+        document.getElementById('barMarker').style.left = pos + '%';
+    }
 
-                // Determine signal
-                const signalData = determineSignal(currentPrice, sma, buyThreshold, sellThreshold);
+    function fmt(n) {
+        return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
 
-                // Display data
-                displayData(currentPrice, sma, signalData);
+    function resetSignalCard() {
+        const card = document.getElementById('signalCard');
+        card.className = 'signal-card empty';
+        document.getElementById('signalValue').textContent  = '—';
+        document.getElementById('signalPct').style.display  = 'none';
+        document.getElementById('dataCard').style.display   = 'none';
+        document.getElementById('thresholdBar').style.display = 'none';
+    }
 
-            } catch (error) {
-                showError('Error fetching data: ' + error.message);
-            }
-        }
+    function setLastUpdated() {
+        const time = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        document.getElementById('lastUpdated').textContent = `Updated ${time}`;
+    }
 
-        // Display the fetched data
-        function displayData(currentPrice, sma, signalData) {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('error').style.display = 'none';
-            document.getElementById('dataDisplay').style.display = 'block';
-            document.getElementById('tradingSignal').style.display = 'block';
+    function showError(msg) {
+        const el = document.getElementById('errorCard');
+        document.getElementById('errorMsg').textContent = msg;
+        el.style.display = 'block';
+        resetSignalCard();
+    }
 
-            // Update data display
-            document.getElementById('currentLevel').textContent = currentPrice.toFixed(2);
-            document.getElementById('smaValue').textContent = sma.toFixed(2);
-            document.getElementById('difference').textContent = (currentPrice - sma).toFixed(2);
-            document.getElementById('percentage').textContent = signalData.percentage.toFixed(2) + '%';
+    function hideError() {
+        document.getElementById('errorCard').style.display = 'none';
+    }
 
-            // Update signal display
-            const signalElement = document.getElementById('tradingSignal');
-            const signalText = document.getElementById('signalText');
-            
-            signalText.textContent = signalData.signal;
-            signalElement.className = 'signal ' + signalData.class;
-        }
-
-        // Show loading state
-        function showLoading() {
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('error').style.display = 'none';
-            document.getElementById('dataDisplay').style.display = 'none';
-            document.getElementById('tradingSignal').style.display = 'none';
-        }
-
-        // Show error message
-        function showError(message) {
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('error').style.display = 'block';
-            document.getElementById('error').textContent = message;
-            document.getElementById('dataDisplay').style.display = 'none';
-            document.getElementById('tradingSignal').style.display = 'none';
-        }
-
-
-        // Auto-fetch data on page load (no API key required for Yahoo Finance)
-        function autoFetchIfReady() {
-                // Small delay to ensure UI is fully loaded
-                setTimeout(() => {
-                    fetchData();
-                }, 500);
-        }
-
-
-        // Initialize the page
-        window.onload = function() {
-            loadSettings();
-            autoFetchIfReady();
-            
-            // Add event listeners to notification settings to auto-save and reschedule
-            const notifTimeInput = document.getElementById('notifTime');
-            const notifFrequencySelect = document.getElementById('notifFrequency');
-            
-            if (notifTimeInput) {
-                notifTimeInput.addEventListener('change', function() {
-                    console.log('Notification time changed to:', this.value);
-                    saveSettings();
-                });
-                notifTimeInput.addEventListener('input', function() {
-                    // Also save on input for immediate feedback (though change is usually enough)
-                    console.log('Notification time input:', this.value);
-                });
-            }
-            
-            if (notifFrequencySelect) {
-                notifFrequencySelect.addEventListener('change', function() {
-                    console.log('Notification frequency changed to:', this.value);
-                    saveSettings();
-                });
-            }
-            
-            // API key input removed, no event listeners needed
-        };
-
-    </script>
+    // ── Init ──────────────────────────────────────────────────────
+    window.onload = function () {
+        loadSettings();
+        setTimeout(fetchData, 400);
+    };
+</script>
 </body>
 </html>
