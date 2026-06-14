@@ -1,823 +1,1132 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>SMA Alerts</title>
-    <style>
-        :root {
-            --bg: #f2f2f7;
-            --surface: #ffffff;
-            --surface-2: #f2f2f7;
-            --border: rgba(0,0,0,0.08);
-            --text: #1c1c1e;
-            --text-2: #3a3a3c;
-            --text-3: #8e8e93;
-            --accent: #007aff;
-            --buy: #34c759;
-            --buy-bg: #e8faf0;
-            --buy-text: #1a7a37;
-            --sell: #ff3b30;
-            --sell-bg: #fff0ef;
-            --sell-text: #c0392b;
-            --hold: #ff9500;
-            --hold-bg: #fff8ed;
-            --hold-text: #9a5e00;
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
-            --shadow: 0 2px 12px rgba(0,0,0,0.08);
-            --radius: 16px;
-            --radius-sm: 10px;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>SMA Alerts</title>
+  <style>
+    /* ── Tokens ── */
+    :root {
+      --bg:         #FFFFFF;
+      --bg-subtle:  #FAFAFA;
+      --surface:    #FFFFFF;
+      --border:     #E5E5E5;
+      --border-mid: #D4D4D4;
 
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg: #000000;
-                --surface: #1c1c1e;
-                --surface-2: #2c2c2e;
-                --border: rgba(255,255,255,0.08);
-                --text: #ffffff;
-                --text-2: #ebebf5;
-                --text-3: #8e8e93;
-                --buy-bg: #0d2e18;
-                --buy-text: #4cd97d;
-                --sell-bg: #2d100e;
-                --sell-text: #ff6b63;
-                --hold-bg: #2c1f00;
-                --hold-text: #ffb340;
-                --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
-                --shadow: 0 2px 12px rgba(0,0,0,0.3);
-            }
-        }
+      --text:       #111111;
+      --text-2:     #404040;
+      --text-3:     #737373;
+      --text-muted: #A3A3A3;
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+      --accent:     #000000;
+      --accent-fg:  #FFFFFF;
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-            -webkit-font-smoothing: antialiased;
-        }
+      --buy:        #16A34A;
+      --buy-bg:     #F0FDF4;
+      --sell:       #DC2626;
+      --sell-bg:    #FFF1F2;
+      --hold:       #737373;
+      --hold-bg:    #F5F5F5;
 
-        .page {
-            max-width: 480px;
-            margin: 0 auto;
-            padding: 16px 16px 32px;
-        }
+      --radius:     12px;
+      --radius-sm:  8px;
+    }
 
-        /* ── Header ── */
-        .header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 0 20px;
-        }
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .header-title {
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--text);
-            letter-spacing: -0.5px;
-        }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      padding-top: env(safe-area-inset-top);
+      overscroll-behavior: none;
+    }
 
-        .header-subtitle {
-            font-size: 13px;
-            color: var(--text-3);
-            margin-top: 2px;
-        }
+    .page {
+      max-width: 480px;
+      margin: 0 auto;
+      /* bottom pad = refresh-bar height (~73px) + safe area */
+      padding: 20px 16px calc(73px + env(safe-area-inset-bottom));
+    }
 
-        .settings-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: var(--shadow-sm);
-            flex-shrink: 0;
-            transition: opacity 0.15s;
-        }
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
 
-        .settings-btn:active { opacity: 0.6; }
+    .header-title {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.8px;
+      line-height: 1.1;
+      color: var(--text);
+    }
 
-        /* ── Signal Hero ── */
-        .signal-card {
-            border-radius: var(--radius);
-            padding: 28px 24px;
-            text-align: center;
-            margin-bottom: 12px;
-            transition: background 0.3s, box-shadow 0.3s;
-            box-shadow: var(--shadow);
-        }
+    .header-sub {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--text-3);
+      margin-top: 3px;
+    }
 
-        .signal-card.buy  { background: var(--buy-bg); }
-        .signal-card.sell, .signal-card.sell-80, .signal-card.sell-all { background: var(--sell-bg); }
-        .signal-card.hold { background: var(--hold-bg); }
-        .signal-card.empty {
-            background: var(--surface);
-            border: 1px dashed var(--border);
-            box-shadow: none;
-        }
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 2px;
+    }
 
-        .signal-label {
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            color: var(--text-3);
-            margin-bottom: 8px;
-        }
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1.5px solid var(--border-mid);
+      border-radius: 50%;
+      background: var(--surface);
+      cursor: pointer;
+      color: var(--text-3);
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .icon-btn:active { border-color: var(--text); color: var(--text); }
 
-        .signal-value {
-            font-size: 48px;
-            font-weight: 800;
-            letter-spacing: -1px;
-            line-height: 1;
-        }
+    /* ── Filter bar ── */
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .filter-bar::-webkit-scrollbar { display: none; }
 
-        .signal-card.buy  .signal-value  { color: var(--buy-text); }
-        .signal-card.sell .signal-value,
-        .signal-card.sell-80 .signal-value,
-        .signal-card.sell-all .signal-value { color: var(--sell-text); }
-        .signal-card.hold .signal-value { color: var(--hold-text); }
-        .signal-card.empty .signal-value { color: var(--text-3); font-size: 32px; font-weight: 600; }
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 34px;
+      padding: 0 14px;
+      border-radius: 34px;
+      border: 1.5px solid var(--border-mid);
+      background: var(--surface);
+      color: var(--text-3);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      letter-spacing: -0.1px;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .filter-chip.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--accent-fg);
+    }
 
-        .signal-pct {
-            font-size: 15px;
-            font-weight: 500;
-            margin-top: 8px;
-            opacity: 0.75;
-        }
+    .chip-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .chip-dot.buy  { background: var(--buy); }
+    .chip-dot.hold { background: var(--hold); }
+    .chip-dot.sell { background: var(--sell); }
+    .filter-chip.active .chip-dot { display: none; }
 
-        .signal-card.buy  .signal-pct  { color: var(--buy-text); }
-        .signal-card.sell .signal-pct,
-        .signal-card.sell-80 .signal-pct,
-        .signal-card.sell-all .signal-pct { color: var(--sell-text); }
-        .signal-card.hold .signal-pct { color: var(--hold-text); }
+    /* ── Cards ── */
+    /* Outer card is the clip container; inner card is what slides */
+    .index-card {
+      position: relative;
+      overflow: hidden;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 10px;
+    }
 
-        /* ── Data rows ── */
-        .data-card {
-            background: var(--surface);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow-sm);
-            overflow: hidden;
-            margin-bottom: 12px;
-        }
+    /* Swipe-reveal action strip (sits behind card-inner on the right) */
+    .swipe-actions {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      align-items: stretch;
+    }
 
-        .data-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 13px 16px;
-            border-bottom: 1px solid var(--border);
-        }
+    .action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      width: 80px;
+      border: none;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      color: white;
+      -webkit-tap-highlight-color: transparent;
+    }
 
-        .data-row:last-child { border-bottom: none; }
+    .action-delete { background: var(--sell); }
 
-        .data-row-label {
-            font-size: 15px;
-            color: var(--text-2);
-        }
+    /* The sliding face of the card */
+    .card-inner {
+      background: var(--surface);
+      position: relative;
+      z-index: 1;
+      border-radius: calc(var(--radius) - 2px);
+      transform: translateX(0);
+      will-change: transform;
+    }
 
-        .data-row-value {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--text);
-            font-variant-numeric: tabular-nums;
-        }
+    .card-main {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+      gap: 12px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
 
-        /* ── Refresh button ── */
-        .refresh-btn {
-            width: 100%;
-            padding: 15px;
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            border-radius: var(--radius);
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-bottom: 12px;
-            transition: opacity 0.15s, transform 0.1s;
-            font-family: inherit;
-            letter-spacing: -0.2px;
-        }
+    .card-info { flex: 1; min-width: 0; }
 
-        .refresh-btn:active {
-            opacity: 0.85;
-            transform: scale(0.98);
-        }
+    .card-name {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--text);
+    }
+    .card-symbol {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--text-3);
+      margin-top: 2px;
+    }
 
-        .refresh-btn:disabled {
-            opacity: 0.5;
-            cursor: default;
-        }
+    .card-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 5px;
+      flex-shrink: 0;
+    }
 
-        /* ── Last updated ── */
-        .last-updated {
-            text-align: center;
-            font-size: 12px;
-            color: var(--text-3);
-            margin-bottom: 20px;
-        }
+    .signal-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .signal-badge.buy      { background: var(--buy-bg);  color: var(--buy); }
+    .signal-badge.hold     { background: var(--hold-bg); color: var(--hold); }
+    .signal-badge.sell,
+    .signal-badge.sell-80,
+    .signal-badge.sell-all { background: var(--sell-bg); color: var(--sell); }
 
-        /* ── Error ── */
-        .error-card {
-            background: var(--sell-bg);
-            border-radius: var(--radius-sm);
-            padding: 14px 16px;
-            font-size: 14px;
-            color: var(--sell-text);
-            margin-bottom: 12px;
-            display: none;
-        }
+    .card-pct {
+      font-size: 13px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-3);
+    }
+    .card-pct.up   { color: var(--buy); }
+    .card-pct.down { color: var(--sell); }
 
-        .error-card-title {
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
+    .card-chevron {
+      color: var(--text-muted);
+      flex-shrink: 0;
+      transition: transform 0.2s ease;
+    }
+    .card-chevron.open { transform: rotate(180deg); }
 
-        /* ── Position bar ── */
-        .threshold-bar {
-            background: var(--surface);
-            border-radius: var(--radius);
-            padding: 16px;
-            margin-bottom: 12px;
-            box-shadow: var(--shadow-sm);
-        }
+    /* Loading */
+    .card-loading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: auto;
+    }
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border-mid);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .card-loading-text { font-size: 13px; color: var(--text-muted); }
 
-        .threshold-bar-label {
-            font-size: 12px;
-            color: var(--text-3);
-            margin-bottom: 10px;
-            font-weight: 500;
-        }
+    /* Error */
+    .card-error {
+      margin-left: auto;
+      text-align: right;
+      font-size: 13px;
+      color: var(--sell);
+      line-height: 1.5;
+    }
 
-        .bar-track {
-            position: relative;
-            height: 8px;
-            border-radius: 4px;
-            background: linear-gradient(to right,
-                var(--sell) 0%,
-                var(--sell) 15%,
-                var(--hold) 15%,
-                var(--hold) 60%,
-                var(--buy) 60%,
-                var(--buy) 80%,
-                #ff6b00 80%,
-                #ff6b00 90%,
-                #8b0000 90%,
-                #8b0000 100%
-            );
-            opacity: 0.4;
-            margin-bottom: 6px;
-        }
+    /* Expand */
+    .card-detail {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.22s ease;
+    }
+    .card-detail.open { max-height: 200px; }
 
-        .bar-marker {
-            position: absolute;
-            top: -4px;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: var(--text);
-            border: 2px solid var(--surface);
-            box-shadow: var(--shadow-sm);
-            transform: translateX(-50%);
-            transition: left 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
+    .detail-inner {
+      border-top: 1.5px solid var(--border);
+      margin: 0 16px;
+      padding: 10px 0 14px;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 0;
+    }
+    .detail-row + .detail-row { border-top: 1px solid var(--border); }
+    .detail-label { font-size: 14px; font-weight: 400; color: var(--text-3); }
+    .detail-value { font-size: 14px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
 
-        .bar-zones {
-            display: flex;
-            justify-content: space-between;
-            font-size: 10px;
-            color: var(--text-3);
-            margin-top: 4px;
-        }
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text-3);
+      font-size: 15px;
+      line-height: 1.7;
+    }
 
-        /* ── Settings overlay ── */
-        .settings-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.4);
-            z-index: 100;
-            backdrop-filter: blur(2px);
-            -webkit-backdrop-filter: blur(2px);
-        }
+    /* ── Sticky Refresh bar ── */
+    .refresh-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      padding: 12px 16px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom));
+      z-index: 50;
+    }
 
-        .settings-overlay.open { display: flex; align-items: flex-end; }
+    .refresh-btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--accent);
+      color: var(--accent-fg);
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.2px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity 0.15s;
+    }
+    .refresh-btn:active   { opacity: 0.8; }
+    .refresh-btn:disabled { opacity: 0.4; cursor: default; }
 
-        .settings-sheet {
-            background: var(--surface);
-            border-radius: 20px 20px 0 0;
-            width: 100%;
-            max-width: 480px;
-            margin: 0 auto;
-            padding-bottom: env(safe-area-inset-bottom);
-            box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
-            max-height: 85vh;
-            overflow-y: auto;
-            animation: slideUp 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
+    .last-updated {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 400;
+      margin-bottom: 8px;
+      min-height: 16px;
+    }
 
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to   { transform: translateY(0); }
-        }
+    /* ── Bottom sheet shared styles ── */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 100;
+      backdrop-filter: blur(1px);
+      -webkit-backdrop-filter: blur(1px);
+    }
+    .overlay.open { display: flex; align-items: flex-end; }
 
-        .sheet-handle {
-            width: 36px;
-            height: 4px;
-            background: var(--border);
-            border-radius: 2px;
-            margin: 10px auto 20px;
-        }
+    .sheet {
+      background: var(--surface);
+      border-radius: 20px 20px 0 0;
+      width: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      padding-bottom: env(safe-area-inset-bottom);
+      max-height: 88vh;
+      overflow-y: auto;
+      animation: slideUp 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
 
-        .sheet-title {
-            font-size: 18px;
-            font-weight: 700;
-            padding: 0 20px 16px;
-            color: var(--text);
-            letter-spacing: -0.3px;
-        }
+    .sheet-handle {
+      width: 32px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--border-mid);
+      margin: 12px auto 0;
+    }
 
-        .settings-group {
-            margin-bottom: 8px;
-        }
+    .sheet-header {
+      padding: 16px 20px 12px;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
 
-        .settings-group-label {
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-3);
-            padding: 0 20px 6px;
-        }
+    .sheet-section {
+      padding: 0 20px;
+      margin-bottom: 24px;
+    }
 
-        .settings-rows {
-            background: var(--surface-2);
-            border-radius: var(--radius-sm);
-            margin: 0 16px;
-            overflow: hidden;
-        }
+    .sheet-section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
 
-        .settings-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 14px;
-            border-bottom: 1px solid var(--border);
-            gap: 12px;
-        }
+    .sheet-rows {
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
 
-        .settings-row:last-child { border-bottom: none; }
+    .sheet-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px 14px;
+      background: var(--bg-subtle);
+      border-bottom: 1px solid var(--border);
+    }
+    .sheet-row:last-child { border-bottom: none; }
 
-        .settings-row-label {
-            font-size: 15px;
-            color: var(--text);
-            flex: 1;
-        }
+    .sheet-row-label { font-size: 15px; font-weight: 500; color: var(--text); }
+    .sheet-row-hint  { font-size: 12px; font-weight: 400; color: var(--text-3); margin-top: 1px; }
 
-        .settings-row-hint {
-            font-size: 12px;
-            color: var(--text-3);
-            margin-top: 1px;
-        }
+    /* Inputs */
+    .sheet-input {
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+      background: var(--surface);
+      border: 1.5px solid var(--border-mid);
+      border-radius: 8px;
+      padding: 6px 10px;
+      width: 72px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .sheet-input:focus { outline: none; border-color: var(--accent); }
 
-        .settings-input {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 6px 10px;
-            font-size: 15px;
-            color: var(--text);
-            font-family: inherit;
-            text-align: right;
-            width: 80px;
-            font-variant-numeric: tabular-nums;
-        }
+    .sheet-select {
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      background: var(--surface);
+      border: 1.5px solid var(--border-mid);
+      border-radius: 8px;
+      padding: 6px 10px;
+      max-width: 150px;
+    }
+    .sheet-select:focus { outline: none; border-color: var(--accent); }
 
-        .settings-select {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 6px 10px;
-            font-size: 15px;
-            color: var(--text);
-            font-family: inherit;
-            max-width: 160px;
-        }
+    .time-input {
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+    }
 
-        .settings-input:focus,
-        .settings-select:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
+    .notif-time-row {
+      overflow: hidden;
+      max-height: 60px;
+      transition: max-height 0.2s ease, opacity 0.2s ease;
+    }
+    .notif-time-row.hidden { max-height: 0; opacity: 0; pointer-events: none; }
 
-        .notif-time-row {
-            transition: max-height 0.2s ease, opacity 0.2s ease;
-            overflow: hidden;
-            max-height: 60px;
-        }
+    /* Done button */
+    .sheet-done {
+      display: block;
+      width: calc(100% - 40px);
+      margin: 4px 20px 20px;
+      padding: 14px;
+      background: var(--accent);
+      color: var(--accent-fg);
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: -0.2px;
+      transition: opacity 0.15s;
+    }
+    .sheet-done:active { opacity: 0.8; }
 
-        .notif-time-row.hidden {
-            max-height: 0;
-            opacity: 0;
-            pointer-events: none;
-        }
+    /* ── Add Index sheet specifics ── */
+    .add-index-row {
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.1s;
+    }
+    .add-index-row:active { background: var(--border); }
 
-        .sheet-done-btn {
-            display: block;
-            width: calc(100% - 32px);
-            margin: 16px 16px 8px;
-            padding: 14px;
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            border-radius: var(--radius-sm);
-            font-size: 16px;
-            font-weight: 600;
-            font-family: inherit;
-            cursor: pointer;
-            transition: opacity 0.15s;
-        }
+    .add-index-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border-mid);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-3);
+      flex-shrink: 0;
+    }
 
-        .sheet-done-btn:active { opacity: 0.8; }
-    </style>
+    .add-empty {
+      text-align: center;
+      padding: 32px 20px;
+      color: var(--text-3);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* Reduce motion */
+    @media (prefers-reduced-motion: reduce) {
+      .card-detail, .card-chevron, .filter-chip,
+      .sheet { transition: none; animation: none; }
+    }
+  </style>
 </head>
 <body>
 
 <div class="page">
 
-    <!-- Header -->
-    <div class="header">
-        <div>
-            <div class="header-title" id="headerTitle">SMA Signals</div>
-            <div class="header-subtitle">200-day moving average</div>
-        </div>
-        <div class="settings-btn" onclick="openSettings()" title="Settings">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
-        </div>
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <div class="header-title">Market<br>Signals</div>
+      <div class="header-sub">200-day moving average</div>
     </div>
-
-    <!-- Signal Hero -->
-    <div class="signal-card empty" id="signalCard">
-        <div class="signal-label">Signal</div>
-        <div class="signal-value" id="signalValue">—</div>
-        <div class="signal-pct" id="signalPct" style="display:none"></div>
+    <div class="header-actions">
+      <button class="icon-btn" onclick="openAddIndex()" aria-label="Add index">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </button>
+      <button class="icon-btn" onclick="openSettings()" aria-label="Settings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
     </div>
+  </div>
 
-    <!-- Error -->
-    <div class="error-card" id="errorCard">
-        <div class="error-card-title">Couldn't load data</div>
-        <div id="errorMsg"></div>
-    </div>
+  <!-- Filter bar -->
+  <div class="filter-bar" role="group" aria-label="Filter signals">
+    <button class="filter-chip active" id="filterAll"  onclick="setFilter(null)">All</button>
+    <button class="filter-chip"        id="filterBuy"  onclick="setFilter('buy')">
+      <span class="chip-dot buy"></span><span id="buyCount">–</span> BUY
+    </button>
+    <button class="filter-chip"        id="filterHold" onclick="setFilter('hold')">
+      <span class="chip-dot hold"></span><span id="holdCount">–</span> HOLD
+    </button>
+    <button class="filter-chip"        id="filterSell" onclick="setFilter('sell')">
+      <span class="chip-dot sell"></span><span id="sellCount">–</span> SELL
+    </button>
+  </div>
 
-    <!-- Refresh -->
-    <button class="refresh-btn" id="refreshBtn" onclick="fetchData()">Refresh Signal</button>
+  <!-- Cards -->
+  <div id="cardsContainer"></div>
 
-    <!-- Last updated -->
-    <div class="last-updated" id="lastUpdated"></div>
+</div>
 
-    <!-- Data rows -->
-    <div class="data-card" id="dataCard" style="display:none">
-        <div class="data-row">
-            <span class="data-row-label" id="indexLabel">Index</span>
-            <span class="data-row-value" id="currentLevel">—</span>
-        </div>
-        <div class="data-row">
-            <span class="data-row-label">200-Day SMA</span>
-            <span class="data-row-value" id="smaValue">—</span>
-        </div>
-        <div class="data-row">
-            <span class="data-row-label">Distance from SMA</span>
-            <span class="data-row-value" id="difference">—</span>
-        </div>
-    </div>
-
-    <!-- Position bar -->
-    <div class="threshold-bar" id="thresholdBar" style="display:none">
-        <div class="threshold-bar-label">Position relative to SMA</div>
-        <div class="bar-track">
-            <div class="bar-marker" id="barMarker"></div>
-        </div>
-        <div class="bar-zones">
-            <span>SELL</span>
-            <span>HOLD</span>
-            <span>BUY</span>
-            <span>SELL 80%</span>
-            <span>SELL ALL</span>
-        </div>
-    </div>
-
+<!-- Sticky refresh bar -->
+<div class="refresh-bar">
+  <div class="last-updated" id="lastUpdated"></div>
+  <button class="refresh-btn" id="refreshBtn" onclick="fetchAll()">Refresh All</button>
 </div>
 
 <!-- Settings overlay -->
-<div class="settings-overlay" id="settingsOverlay" onclick="overlayClick(event)">
-    <div class="settings-sheet" id="settingsSheet">
-        <div class="sheet-handle"></div>
-        <div class="sheet-title">Settings</div>
+<div class="overlay" id="settingsOverlay" onclick="settingsOverlayClick(event)">
+  <div class="sheet" id="settingsSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">Settings</div>
 
-        <div class="settings-group">
-            <div class="settings-group-label">Market</div>
-            <div class="settings-rows">
-                <div class="settings-row">
-                    <div class="settings-row-label">Index</div>
-                    <select class="settings-select" id="indexSelect" onchange="onIndexChange()">
-                        <option value="$SPX">S&amp;P 500</option>
-                        <option value="$NASX">NASDAQ</option>
-                        <option value="URTH">MSCI World</option>
-                    </select>
-                </div>
-            </div>
+    <div class="sheet-section">
+      <div class="sheet-section-label">Signal Thresholds</div>
+      <div class="sheet-rows">
+        <div class="sheet-row">
+          <div>
+            <div class="sheet-row-label">Buy above SMA</div>
+            <div class="sheet-row-hint">% above 200-day average</div>
+          </div>
+          <input class="sheet-input" type="number" id="buyThreshold" value="4" step="0.1" min="0" max="100">
         </div>
-
-        <div class="settings-group">
-            <div class="settings-group-label">Signal Thresholds</div>
-            <div class="settings-rows">
-                <div class="settings-row">
-                    <div>
-                        <div class="settings-row-label">Buy above SMA</div>
-                        <div class="settings-row-hint">Default: 4%</div>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:4px">
-                        <input class="settings-input" type="number" id="buyThreshold" value="4" step="0.1" min="0" max="100">
-                        <span style="font-size:15px;color:var(--text-3)">%</span>
-                    </div>
-                </div>
-                <div class="settings-row">
-                    <div>
-                        <div class="settings-row-label">Sell below SMA</div>
-                        <div class="settings-row-hint">Default: 3%</div>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:4px">
-                        <input class="settings-input" type="number" id="sellThreshold" value="3" step="0.1" min="0" max="100">
-                        <span style="font-size:15px;color:var(--text-3)">%</span>
-                    </div>
-                </div>
-            </div>
+        <div class="sheet-row">
+          <div>
+            <div class="sheet-row-label">Sell below SMA</div>
+            <div class="sheet-row-hint">% below 200-day average</div>
+          </div>
+          <input class="sheet-input" type="number" id="sellThreshold" value="3" step="0.1" min="0" max="100">
         </div>
-
-        <div class="settings-group">
-            <div class="settings-group-label">Notifications</div>
-            <div class="settings-rows">
-                <div class="settings-row">
-                    <div class="settings-row-label">Frequency</div>
-                    <select class="settings-select" id="notifFrequency" onchange="onNotifFreqChange()">
-                        <option value="disabled">Off</option>
-                        <option value="on_change" selected>On signal change</option>
-                        <option value="daily">Daily</option>
-                    </select>
-                </div>
-                <div class="settings-row notif-time-row" id="notifTimeRow">
-                    <div class="settings-row-label">Alert time</div>
-                    <input class="settings-input" type="time" id="notifTime" style="width:auto;text-align:right">
-                </div>
-            </div>
-        </div>
-
-        <button class="sheet-done-btn" onclick="closeSettings()">Done</button>
+      </div>
     </div>
+
+    <div class="sheet-section">
+      <div class="sheet-section-label">Notifications</div>
+      <div class="sheet-rows">
+        <div class="sheet-row">
+          <div class="sheet-row-label">Frequency</div>
+          <select class="sheet-select" id="notifFrequency" onchange="onNotifFreqChange()">
+            <option value="disabled">Off</option>
+            <option value="on_change" selected>On change</option>
+            <option value="daily">Daily</option>
+          </select>
+        </div>
+        <div class="sheet-row notif-time-row" id="notifTimeRow">
+          <div>
+            <div class="sheet-row-label">Alert time</div>
+            <div class="sheet-row-hint">Your timezone</div>
+          </div>
+          <input type="time" id="notifTime" class="time-input">
+        </div>
+      </div>
+    </div>
+
+    <button class="sheet-done" onclick="closeSettings()">Done</button>
+  </div>
+</div>
+
+<!-- Add Index overlay -->
+<div class="overlay" id="addOverlay" onclick="addOverlayClick(event)">
+  <div class="sheet" id="addSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">Add Index</div>
+
+    <div class="sheet-section">
+      <div class="sheet-section-label">Available</div>
+      <div id="addIndexList" class="sheet-rows"></div>
+    </div>
+
+    <button class="sheet-done" onclick="closeAddIndex()">Done</button>
+  </div>
 </div>
 
 <script>
-    const INDEX = {
-        '$SPX':  { name: 'S&P 500',    label: 'S&P 500 ($SPX)' },
-        '$NASX': { name: 'NASDAQ',     label: 'NASDAQ ($NASX)' },
-        'URTH':  { name: 'MSCI World', label: 'MSCI World (URTH)' },
-    };
+  const CATALOG = [
+    { id: '$SPX',  name: 'S&P 500',           symbol: '$SPX'  },
+    { id: '$NASX', name: 'NASDAQ Composite',   symbol: '$NASX' },
+    { id: '$DJI',  name: 'Dow Jones',          symbol: '$DJI'  },
+    { id: 'URTH',  name: 'MSCI World',         symbol: 'URTH'  },
+    { id: 'QQQ',   name: 'NASDAQ 100',         symbol: 'QQQ'   },
+    { id: 'IWM',   name: 'Russell 2000',       symbol: 'IWM'   },
+    { id: 'EEM',   name: 'Emerging Markets',   symbol: 'EEM'   },
+    { id: 'GLD',   name: 'Gold',               symbol: 'GLD'   },
+    { id: 'VEA',   name: 'Developed Markets',  symbol: 'VEA'   },
+  ];
 
-    // ── Settings ──────────────────────────────────────────────────
-    function loadSettings() {
-        const buy  = localStorage.getItem('buyThreshold');
-        const sell = localStorage.getItem('sellThreshold');
-        const idx  = localStorage.getItem('selectedIndex');
-        const freq = localStorage.getItem('notifFrequency');
-        const hour = localStorage.getItem('notifHour');
-        const min  = localStorage.getItem('notifMinute');
+  const MOCK = {
+    '$SPX':  { currentPrice: 5320.45,  sma200: 4987.12  },
+    '$NASX': { currentPrice: 19250.00, sma200: 19100.00 },
+    '$DJI':  { currentPrice: 43800.00, sma200: 42500.00 },
+    'URTH':  { currentPrice: 113.20,   sma200: 120.50   },
+    'QQQ':   { currentPrice: 478.50,   sma200: 455.00   },
+    'IWM':   { currentPrice: 198.20,   sma200: 205.00   },
+    'EEM':   { currentPrice: 44.50,    sma200: 43.80    },
+    'GLD':   { currentPrice: 310.00,   sma200: 285.00   },
+    'VEA':   { currentPrice: 49.80,    sma200: 51.20    },
+  };
 
-        if (buy)  document.getElementById('buyThreshold').value  = buy;
-        if (sell) document.getElementById('sellThreshold').value = sell;
-        document.getElementById('indexSelect').value = idx || '$SPX';
+  let tracked      = ['$SPX', '$NASX', 'URTH'];
+  let results      = {};
+  let activeFilter = null;
+  let activeSwipe  = null;
 
-        const oldEnabled = localStorage.getItem('notifEnabled');
-        if (freq) {
-            document.getElementById('notifFrequency').value = freq;
-        } else if (oldEnabled === 'false') {
-            document.getElementById('notifFrequency').value = 'disabled';
-        } else {
-            document.getElementById('notifFrequency').value = 'on_change';
+  // ── Swipe to reveal ───────────────────────────────────────────
+  function attachSwipe(sym) {
+    const card = document.querySelector(`.index-card[data-sym="${sym}"]`);
+    if (!card) return;
+    const inner       = card.querySelector('.card-inner');
+    const actionWidth = card.querySelector('.swipe-actions')?.offsetWidth || 80;
+
+    let startX = 0, startY = 0, curX = 0, direction = null;
+
+    inner.addEventListener('touchstart', e => {
+      startX    = e.touches[0].clientX;
+      startY    = e.touches[0].clientY;
+      curX      = startX;
+      direction = null;
+      inner.style.transition = 'none';
+      if (activeSwipe && activeSwipe !== sym) closeSwipe(activeSwipe);
+    }, { passive: true });
+
+    inner.addEventListener('touchmove', e => {
+      curX = e.touches[0].clientX;
+      const dx = curX - startX;
+      const dy = e.touches[0].clientY - startY;
+
+      if (!direction && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
+        direction = Math.abs(dx) >= Math.abs(dy) ? 'h' : 'v';
+      }
+      if (direction !== 'h') return;
+
+      e.preventDefault();
+      const translate = Math.min(0, Math.max(-actionWidth, dx));
+      inner.style.transform = `translateX(${translate}px)`;
+    }, { passive: false });
+
+    inner.addEventListener('touchend', () => {
+      if (direction !== 'h') return;
+      inner.style.transition = 'transform 0.2s ease';
+      const dx = curX - startX;
+      if (dx < -(actionWidth / 2)) {
+        inner.style.transform = `translateX(-${actionWidth}px)`;
+        activeSwipe = sym;
+      } else {
+        inner.style.transform = 'translateX(0)';
+        if (activeSwipe === sym) activeSwipe = null;
+      }
+    });
+  }
+
+  function closeSwipe(sym) {
+    const inner = document.querySelector(`.index-card[data-sym="${sym}"] .card-inner`);
+    if (inner) {
+      inner.style.transition = 'transform 0.2s ease';
+      inner.style.transform  = 'translateX(0)';
+    }
+    if (activeSwipe === sym) activeSwipe = null;
+  }
+
+  // Close any open swipe when tapping outside that card
+  document.addEventListener('touchstart', e => {
+    if (activeSwipe && !e.target.closest(`.index-card[data-sym="${activeSwipe}"]`)) {
+      closeSwipe(activeSwipe);
+    }
+  }, { passive: true });
+
+  // ── Delete index ──────────────────────────────────────────────
+  function deleteIndex(sym, e) {
+    e.stopPropagation();
+    const inner = document.querySelector(`.index-card[data-sym="${sym}"] .card-inner`);
+    if (inner) {
+      inner.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+      inner.style.transform  = 'translateX(-110%)';
+      inner.style.opacity    = '0';
+    }
+    setTimeout(() => {
+      tracked = tracked.filter(s => s !== sym);
+      delete results[sym];
+      if (activeSwipe === sym) activeSwipe = null;
+      saveSettings();
+      renderCards();
+    }, 200);
+  }
+
+  // ── Settings ──────────────────────────────────────────────────
+  function loadSettings() {
+    const t    = localStorage.getItem('trackedIndexes');
+    const buy  = localStorage.getItem('buyThreshold');
+    const sell = localStorage.getItem('sellThreshold');
+    const freq = localStorage.getItem('notifFrequency');
+    const hour = localStorage.getItem('notifHour');
+    const min  = localStorage.getItem('notifMinute');
+
+    if (t)    tracked = JSON.parse(t);
+    if (buy)  document.getElementById('buyThreshold').value  = buy;
+    if (sell) document.getElementById('sellThreshold').value = sell;
+
+    const oldEnabled = localStorage.getItem('notifEnabled');
+    if (freq)                        document.getElementById('notifFrequency').value = freq;
+    else if (oldEnabled === 'false') document.getElementById('notifFrequency').value = 'disabled';
+
+    document.getElementById('notifTime').value =
+      (hour && min)
+        ? `${String(hour).padStart(2,'0')}:${String(min).padStart(2,'0')}`
+        : defaultNotifTime();
+
+    updateNotifTimeVisibility();
+  }
+
+  function saveSettings() {
+    localStorage.setItem('trackedIndexes', JSON.stringify(tracked));
+    localStorage.setItem('buyThreshold',   document.getElementById('buyThreshold').value);
+    localStorage.setItem('sellThreshold',  document.getElementById('sellThreshold').value);
+    localStorage.setItem('notifFrequency', document.getElementById('notifFrequency').value);
+    const [h, m] = (document.getElementById('notifTime').value || '15:30').split(':');
+    localStorage.setItem('notifHour',   String(parseInt(h  || '15', 10)));
+    localStorage.setItem('notifMinute', String(parseInt(m  || '30', 10)));
+    if (window.Android && typeof window.Android.rescheduleNotifications === 'function') {
+      try { window.Android.rescheduleNotifications(); } catch (_) {}
+    }
+  }
+
+  function defaultNotifTime() {
+    const now = new Date(), mo = now.getMonth();
+    const off = (mo >= 2 && mo <= 10) ? 4 : 5;
+    const yyyy = now.getFullYear();
+    const mm   = String(now.getMonth() + 1).padStart(2, '0');
+    const dd   = String(now.getDate()).padStart(2, '0');
+    const t    = new Date(`${yyyy}-${mm}-${dd}T15:30:00-0${off}:00`);
+    return `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
+  }
+
+  function openSettings() {
+    document.getElementById('settingsOverlay').classList.add('open');
+  }
+  function closeSettings() {
+    saveSettings();
+    document.getElementById('settingsOverlay').classList.remove('open');
+    renderCards();
+    tracked.filter(s => !results[s] || results[s].state === 'error').forEach(fetchOne);
+  }
+  function settingsOverlayClick(e) {
+    if (e.target === document.getElementById('settingsOverlay')) closeSettings();
+  }
+  function onNotifFreqChange() { updateNotifTimeVisibility(); }
+  function updateNotifTimeVisibility() {
+    const freq = document.getElementById('notifFrequency').value;
+    document.getElementById('notifTimeRow').classList.toggle('hidden', freq === 'disabled');
+  }
+
+  // ── Add Index sheet ───────────────────────────────────────────
+  function openAddIndex() {
+    const available = CATALOG.filter(c => !tracked.includes(c.id));
+    const listEl    = document.getElementById('addIndexList');
+
+    if (!available.length) {
+      listEl.innerHTML = '<div class="add-empty">All available indexes are already being tracked.</div>';
+    } else {
+      listEl.innerHTML = available.map(idx => `
+        <div class="sheet-row add-index-row" onclick="addIndex('${idx.id}')">
+          <div>
+            <div class="sheet-row-label">${idx.name}</div>
+            <div class="sheet-row-hint">${idx.symbol}</div>
+          </div>
+          <div class="add-index-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </div>
+        </div>`).join('');
+    }
+
+    document.getElementById('addOverlay').classList.add('open');
+  }
+
+  function addIndex(id) {
+    if (!tracked.includes(id)) {
+      tracked.push(id);
+      saveSettings();
+    }
+    closeAddIndex();
+    renderCards();
+    fetchOne(id);
+  }
+
+  function closeAddIndex() {
+    document.getElementById('addOverlay').classList.remove('open');
+  }
+  function addOverlayClick(e) {
+    if (e.target === document.getElementById('addOverlay')) closeAddIndex();
+  }
+
+  // ── Signal logic ──────────────────────────────────────────────
+  function determineSignal(price, sma, buyT, sellT) {
+    const pct = ((price - sma) / sma) * 100;
+    if (pct >= 40)     return { signal: 'SELL ALL', cls: 'sell-all', pct };
+    if (pct >= 30)     return { signal: 'SELL 80%', cls: 'sell-80',  pct };
+    if (pct >= buyT)   return { signal: 'BUY',      cls: 'buy',      pct };
+    if (pct <= -sellT) return { signal: 'SELL',     cls: 'sell',     pct };
+    return                    { signal: 'HOLD',     cls: 'hold',     pct };
+  }
+
+  function filterGroup(cls) {
+    return cls === 'buy' ? 'buy' : cls === 'hold' ? 'hold' : 'sell';
+  }
+
+  // ── Filter ────────────────────────────────────────────────────
+  function setFilter(type) {
+    activeFilter = (activeFilter === type) ? null : type;
+    updateFilterBar();
+    applyFilter();
+  }
+
+  function updateFilterBar() {
+    const counts = { buy: 0, hold: 0, sell: 0 };
+    tracked.forEach(sym => {
+      const r = results[sym];
+      if (r && r.state === 'done') counts[filterGroup(r.cls)]++;
+    });
+    document.getElementById('buyCount').textContent  = counts.buy;
+    document.getElementById('holdCount').textContent = counts.hold;
+    document.getElementById('sellCount').textContent = counts.sell;
+
+    ['filterAll','filterBuy','filterHold','filterSell'].forEach(id =>
+      document.getElementById(id).classList.remove('active'));
+    const activeId = !activeFilter        ? 'filterAll'  :
+                     activeFilter==='buy'  ? 'filterBuy'  :
+                     activeFilter==='hold' ? 'filterHold' : 'filterSell';
+    document.getElementById(activeId).classList.add('active');
+  }
+
+  function applyFilter() {
+    document.querySelectorAll('.index-card').forEach(card => {
+      const r    = results[card.dataset.sym];
+      const show = !activeFilter || (r && r.state === 'done' && filterGroup(r.cls) === activeFilter);
+      card.style.display = show ? '' : 'none';
+    });
+  }
+
+  // ── Card HTML ─────────────────────────────────────────────────
+  const CHEV = `<svg class="card-chevron" id="chev-SYM" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`;
+
+  const TRASH = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+
+  function cardHTML(sym) {
+    const idx = CATALOG.find(c => c.id === sym);
+    if (!idx) return '';
+    const r    = results[sym] || { state: 'loading' };
+    const chev = CHEV.replace('id="chev-SYM"', `id="chev-${sym}"`);
+
+    const swipeActions = `
+      <div class="swipe-actions">
+        <button class="action-btn action-delete" onclick="deleteIndex('${sym}', event)">
+          ${TRASH}
+          <span>Delete</span>
+        </button>
+      </div>`;
+
+    if (r.state === 'loading') return `
+      <div class="index-card" data-sym="${sym}">
+        ${swipeActions}
+        <div class="card-inner">
+          <div class="card-main">
+            <div class="card-info">
+              <div class="card-name">${idx.name}</div>
+              <div class="card-symbol">${idx.symbol}</div>
+            </div>
+            <div class="card-loading">
+              <div class="spinner"></div>
+              <span class="card-loading-text">Loading…</span>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    if (r.state === 'error') return `
+      <div class="index-card" data-sym="${sym}">
+        ${swipeActions}
+        <div class="card-inner" onclick="retryOne('${sym}')">
+          <div class="card-main">
+            <div class="card-info">
+              <div class="card-name">${idx.name}</div>
+              <div class="card-symbol">${idx.symbol}</div>
+            </div>
+            <div class="card-error">Failed to load<br><small style="opacity:.7">Tap to retry</small></div>
+          </div>
+        </div>
+      </div>`;
+
+    const sign    = r.pct >= 0 ? '+' : '';
+    const pctCls  = r.pct >= 0 ? 'up' : 'down';
+    const distCol = r.pct >= 0 ? 'var(--buy)' : 'var(--sell)';
+
+    return `
+      <div class="index-card" data-sym="${sym}">
+        ${swipeActions}
+        <div class="card-inner" onclick="handleCardTap('${sym}')">
+          <div class="card-main">
+            <div class="card-info">
+              <div class="card-name">${idx.name}</div>
+              <div class="card-symbol">${idx.symbol}</div>
+            </div>
+            <div class="card-right">
+              <span class="signal-badge ${r.cls}">${r.signal}</span>
+              <span class="card-pct ${pctCls}">${sign}${r.pct.toFixed(2)}%</span>
+            </div>
+            ${chev}
+          </div>
+          <div class="card-detail" id="detail-${sym}">
+            <div class="detail-inner">
+              <div class="detail-row">
+                <span class="detail-label">Current Price</span>
+                <span class="detail-value">${fmt(r.price)}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">200-Day SMA</span>
+                <span class="detail-value">${fmt(r.sma)}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Distance</span>
+                <span class="detail-value" style="color:${distCol}">${sign}${fmt(r.price - r.sma)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function renderCards() {
+    const el = document.getElementById('cardsContainer');
+    el.innerHTML = tracked.length
+      ? tracked.map(cardHTML).join('')
+      : '<div class="empty-state">No indexes tracked.<br>Tap + to add one.</div>';
+    tracked.forEach(attachSwipe);
+    applyFilter();
+    updateFilterBar();
+  }
+
+  function updateCard(sym) {
+    const existing = document.querySelector(`.index-card[data-sym="${sym}"]`);
+    if (!existing) { renderCards(); return; }
+    const tmp     = document.createElement('div');
+    tmp.innerHTML = cardHTML(sym).trim();
+    existing.replaceWith(tmp.firstElementChild);
+    attachSwipe(sym);
+    applyFilter();
+    updateFilterBar();
+  }
+
+  function handleCardTap(sym) {
+    if (activeSwipe === sym) { closeSwipe(sym); return; }
+    toggleDetail(sym);
+  }
+
+  function toggleDetail(sym) {
+    document.getElementById('detail-' + sym)?.classList.toggle('open');
+    document.getElementById('chev-'   + sym)?.classList.toggle('open');
+  }
+
+  // ── Fetch ─────────────────────────────────────────────────────
+  async function fetchBarchartData(symbol) {
+    if (window.Android && typeof window.Android.getHistoricalData === 'function') {
+      try {
+        const raw = window.Android.getHistoricalData(symbol);
+        if (raw?.trim()) {
+          const d = JSON.parse(raw);
+          if (d.currentPrice && d.sma200) return d;
         }
-
-        if (hour && min) {
-            document.getElementById('notifTime').value =
-                `${String(hour).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
-        } else {
-            document.getElementById('notifTime').value = defaultNotifTime();
-        }
-
-        updateNotifTimeVisibility();
-        updateHeaderLabel();
+      } catch (_) {}
     }
+    const res = await fetch(
+      `https://www.barchart.com/stocks/quotes/${symbol}/technical-analysis`,
+      { headers: { 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' } }
+    );
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const html = await res.text();
+    let p = 0, s = 0;
+    const pm = html.match(/"lastPrice"\s*:\s*"?([0-9,]+\.?[0-9]*)"?/);
+    if (pm) p = parseFloat(pm[1].replace(/,/g, ''));
+    const sm = html.match(/<td>200-Day<\/td>\s*<td[^>]*>\s*([\d,]+\.?\d*)\s*<\/td>/);
+    if (sm) s = parseFloat(sm[1].replace(/,/g, ''));
+    if (!p || !s) throw new Error('Could not parse data');
+    return { currentPrice: p, sma200: s };
+  }
 
-    function saveSettings() {
-        localStorage.setItem('buyThreshold',   document.getElementById('buyThreshold').value);
-        localStorage.setItem('sellThreshold',  document.getElementById('sellThreshold').value);
-        localStorage.setItem('selectedIndex',  document.getElementById('indexSelect').value);
-        localStorage.setItem('notifFrequency', document.getElementById('notifFrequency').value);
-
-        const timeVal = document.getElementById('notifTime').value || '15:30';
-        const [h, m]  = timeVal.split(':');
-        localStorage.setItem('notifHour',   String(parseInt(h || '15', 10)));
-        localStorage.setItem('notifMinute', String(parseInt(m || '30', 10)));
-
-        if (window.Android && typeof window.Android.rescheduleNotifications === 'function') {
-            try { window.Android.rescheduleNotifications(); } catch (_) {}
-        }
+  async function fetchOne(sym) {
+    results[sym] = { state: 'loading' };
+    updateCard(sym);
+    try {
+      const d    = await fetchBarchartData(sym);
+      const buyT = parseFloat(document.getElementById('buyThreshold').value)  || 4;
+      const selT = parseFloat(document.getElementById('sellThreshold').value) || 3;
+      results[sym] = { state: 'done', price: d.currentPrice, sma: d.sma200,
+                       ...determineSignal(d.currentPrice, d.sma200, buyT, selT) };
+    } catch (e) {
+      results[sym] = { state: 'error', msg: e.message };
     }
+    updateCard(sym);
+  }
 
-    function defaultNotifTime() {
-        const now    = new Date();
-        const month  = now.getMonth();
-        const isDST  = month >= 2 && month <= 10;
-        const offset = isDST ? 4 : 5;
-        const yyyy   = now.getFullYear();
-        const mm     = String(now.getMonth() + 1).padStart(2,'0');
-        const dd     = String(now.getDate()).padStart(2,'0');
-        const t      = new Date(`${yyyy}-${mm}-${dd}T15:30:00-0${offset}:00`);
-        return `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
-    }
+  async function fetchAll() {
+    const btn       = document.getElementById('refreshBtn');
+    btn.disabled    = true;
+    btn.textContent = 'Refreshing…';
+    tracked.forEach(s => { results[s] = { state: 'loading' }; });
+    renderCards();
+    await Promise.all(tracked.map(fetchOne));
+    const time = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    document.getElementById('lastUpdated').textContent = `Updated ${time}`;
+    btn.disabled    = false;
+    btn.textContent = 'Refresh All';
+  }
 
-    // ── Settings sheet ────────────────────────────────────────────
-    function openSettings() {
-        document.getElementById('settingsOverlay').classList.add('open');
-    }
+  function retryOne(sym) { fetchOne(sym); }
 
-    function closeSettings() {
-        saveSettings();
-        document.getElementById('settingsOverlay').classList.remove('open');
-    }
+  function fmt(n) {
+    return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
 
-    function overlayClick(e) {
-        if (e.target === document.getElementById('settingsOverlay')) closeSettings();
-    }
+  // ── Init ──────────────────────────────────────────────────────
+  window.onload = function () {
+    loadSettings();
+    renderCards();
 
-    function onIndexChange() {
-        updateHeaderLabel();
-        saveSettings();
-        fetchData();
-    }
+    const isBrowser = !window.Android &&
+      (location.protocol === 'file:' || location.hostname === 'localhost' ||
+       location.hostname.endsWith('github.io'));
 
-    function onNotifFreqChange() {
-        updateNotifTimeVisibility();
-    }
-
-    function updateNotifTimeVisibility() {
-        const freq = document.getElementById('notifFrequency').value;
-        document.getElementById('notifTimeRow').classList.toggle('hidden', freq === 'disabled');
-    }
-
-    function updateHeaderLabel() {
-        const idx = document.getElementById('indexSelect').value;
-        const cfg = INDEX[idx] || INDEX['$SPX'];
-        document.getElementById('headerTitle').textContent  = cfg.name + ' SMA';
-        document.getElementById('indexLabel').textContent   = cfg.label;
-    }
-
-    // ── Signal logic ──────────────────────────────────────────────
-    function determineSignal(price, sma, buyT, sellT) {
-        const pct = ((price - sma) / sma) * 100;
-        if (pct >= 40)     return { signal: 'SELL ALL', cls: 'sell-all', pct };
-        if (pct >= 30)     return { signal: 'SELL 80%', cls: 'sell-80',  pct };
-        if (pct >= buyT)   return { signal: 'BUY',      cls: 'buy',      pct };
-        if (pct <= -sellT) return { signal: 'SELL',     cls: 'sell',     pct };
-        return                    { signal: 'HOLD',     cls: 'hold',     pct };
-    }
-
-    // ── Data fetch ────────────────────────────────────────────────
-    async function fetchBarchartData(symbol) {
-        if (window.Android && typeof window.Android.getHistoricalData === 'function') {
-            try {
-                const raw = window.Android.getHistoricalData(symbol);
-                if (raw && raw.trim()) {
-                    const data = JSON.parse(raw);
-                    if (data.currentPrice && data.sma200) return data;
-                }
-            } catch (_) {}
-        }
-
-        const res = await fetch(
-            `https://www.barchart.com/stocks/quotes/${symbol}/technical-analysis`,
-            { headers: { 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' } }
-        );
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const html = await res.text();
-
-        let currentPrice = 0, sma200 = 0;
-        const priceMatch = html.match(/"lastPrice"\s*:\s*"?([0-9,]+\.?[0-9]*)"?/);
-        if (priceMatch) currentPrice = parseFloat(priceMatch[1].replace(/,/g, ''));
-        const smaMatch = html.match(/<td>200-Day<\/td>\s*<td[^>]*>\s*([\d,]+\.?\d*)\s*<\/td>/);
-        if (smaMatch) sma200 = parseFloat(smaMatch[1].replace(/,/g, ''));
-
-        if (!currentPrice || !sma200) throw new Error('Could not parse data from source');
-        return { currentPrice, sma200 };
-    }
-
-    async function fetchData() {
-        const btn = document.getElementById('refreshBtn');
-        btn.disabled = true;
-        btn.textContent = 'Refreshing…';
-        hideError();
-        resetSignalCard();
-
-        try {
-            const symbol = document.getElementById('indexSelect').value;
-            const data   = await fetchBarchartData(symbol);
-            const buyT   = parseFloat(document.getElementById('buyThreshold').value)  || 4;
-            const sellT  = parseFloat(document.getElementById('sellThreshold').value) || 3;
-            const result = determineSignal(data.currentPrice, data.sma200, buyT, sellT);
-            renderData(data.currentPrice, data.sma200, result);
-            setLastUpdated();
-        } catch (err) {
-            showError(err.message);
-        } finally {
-            btn.disabled = false;
-            btn.textContent = 'Refresh Signal';
-        }
-    }
-
-    // ── Render ────────────────────────────────────────────────────
-    function renderData(price, sma, result) {
-        const card = document.getElementById('signalCard');
-        card.className = 'signal-card ' + result.cls;
-        document.getElementById('signalValue').textContent = result.signal;
-
-        const pctEl = document.getElementById('signalPct');
-        const sign  = result.pct > 0 ? '+' : '';
-        pctEl.textContent   = `${sign}${result.pct.toFixed(2)}% from SMA`;
-        pctEl.style.display = 'block';
-
-        document.getElementById('currentLevel').textContent = fmt(price);
-        document.getElementById('smaValue').textContent     = fmt(sma);
-
-        const diff   = price - sma;
-        const diffEl = document.getElementById('difference');
-        diffEl.textContent = (diff >= 0 ? '+' : '') + fmt(diff);
-        diffEl.style.color = diff >= 0 ? 'var(--buy-text)' : 'var(--sell-text)';
-
-        document.getElementById('dataCard').style.display = 'block';
-        renderBar(result.pct);
-    }
-
-    function renderBar(pct) {
-        document.getElementById('thresholdBar').style.display = 'block';
-        const minPct  = -10, maxPct = 50;
-        const clamped = Math.max(minPct, Math.min(maxPct, pct));
-        const pos     = ((clamped - minPct) / (maxPct - minPct)) * 100;
-        document.getElementById('barMarker').style.left = pos + '%';
-    }
-
-    function fmt(n) {
-        return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-
-    function resetSignalCard() {
-        const card = document.getElementById('signalCard');
-        card.className = 'signal-card empty';
-        document.getElementById('signalValue').textContent  = '—';
-        document.getElementById('signalPct').style.display  = 'none';
-        document.getElementById('dataCard').style.display   = 'none';
-        document.getElementById('thresholdBar').style.display = 'none';
-    }
-
-    function setLastUpdated() {
+    setTimeout(() => {
+      if (isBrowser) {
+        const buyT = parseFloat(document.getElementById('buyThreshold').value) || 4;
+        const selT = parseFloat(document.getElementById('sellThreshold').value) || 3;
+        tracked.forEach(sym => {
+          const m = MOCK[sym];
+          results[sym] = m
+            ? { state: 'done', price: m.currentPrice, sma: m.sma200,
+                ...determineSignal(m.currentPrice, m.sma200, buyT, selT) }
+            : { state: 'error', msg: 'No mock data' };
+        });
+        renderCards();
         const time = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
         document.getElementById('lastUpdated').textContent = `Updated ${time}`;
-    }
-
-    function showError(msg) {
-        const el = document.getElementById('errorCard');
-        document.getElementById('errorMsg').textContent = msg;
-        el.style.display = 'block';
-        resetSignalCard();
-    }
-
-    function hideError() {
-        document.getElementById('errorCard').style.display = 'none';
-    }
-
-    // ── Init ──────────────────────────────────────────────────────
-    window.onload = function () {
-        loadSettings();
-        setTimeout(fetchData, 400);
-    };
+      } else {
+        fetchAll();
+      }
+    }, 500);
+  };
 </script>
 </body>
 </html>
