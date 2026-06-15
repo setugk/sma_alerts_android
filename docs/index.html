@@ -426,6 +426,19 @@
       animation: slideDown 0.22s cubic-bezier(0.32, 0.72, 0, 1) forwards;
     }
 
+    /* Swipe close spring — bounces within the negative range, no overflow tricks needed */
+    @keyframes springClose {
+      0%   { transform: translateX(-160px); }
+      55%  { transform: translateX(-8px);   }
+      70%  { transform: translateX(-22px);  }
+      85%  { transform: translateX(-4px);   }
+      100% { transform: translateX(0);      }
+    }
+    .card-inner.spring-closing {
+      animation: springClose 0.42s ease-in-out forwards;
+      transition: none !important;
+    }
+
     .sheet-handle {
       width: 32px;
       height: 4px;
@@ -765,23 +778,21 @@
         inner.style.transform = `translateX(-${actionWidth}px)`;
         activeSwipe = sym;
       } else {
-        card.style.overflow = 'visible';
         inner.style.transform = 'translateX(0)';
-        setTimeout(() => { card.style.overflow = ''; }, 420);
         if (activeSwipe === sym) activeSwipe = null;
       }
     });
   }
 
   function closeSwipe(sym) {
-    const card  = document.querySelector(`.index-card[data-sym="${sym}"]`);
-    const inner = card?.querySelector('.card-inner');
+    const inner = document.querySelector(`.index-card[data-sym="${sym}"] .card-inner`);
     if (inner) {
-      // Unlock overflow so the spring overshoot past 0 is visible, then restore
-      if (card) card.style.overflow = 'visible';
-      inner.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
-      inner.style.transform  = 'translateX(0)';
-      setTimeout(() => { if (card) card.style.overflow = ''; }, 420);
+      inner.style.transition = '';
+      inner.classList.add('spring-closing');
+      inner.addEventListener('animationend', () => {
+        inner.classList.remove('spring-closing');
+        inner.style.transform = 'translateX(0)';
+      }, { once: true });
     }
     if (activeSwipe === sym) activeSwipe = null;
   }
@@ -1198,11 +1209,8 @@
       inner.style.transition = 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
       inner.style.transform  = 'translateX(-80px)';
       setTimeout(() => {
-        const parent = inner.closest('.index-card');
-        if (parent) parent.style.overflow = 'visible';
         inner.style.transition = 'transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)';
         inner.style.transform  = 'translateX(0)';
-        setTimeout(() => { if (parent) parent.style.overflow = ''; }, 470);
       }, 900);
     }, 800);
   }
