@@ -300,7 +300,7 @@
       overflow: hidden;
       transition: max-height 0.22s ease;
     }
-    .card-detail.open { max-height: 200px; }
+    .card-detail.open { max-height: 300px; }
 
     /* Toggle — used both in settings and on cards */
     .toggle {
@@ -341,6 +341,32 @@
     .detail-row + .detail-row { border-top: 1px solid var(--border); }
     .detail-label { font-size: 14px; font-weight: 400; color: var(--text-3); }
     .detail-value { font-size: 14px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+
+    .detail-actions {
+      display: flex;
+      border-top: 1.5px solid var(--border);
+      margin: 0 16px;
+    }
+    .detail-action-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 12px 0;
+      background: none;
+      border: none;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-3);
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .detail-action-remove {
+      border-left: 1px solid var(--border);
+      color: var(--sell);
+    }
 
     /* Empty state */
     .empty-state {
@@ -393,15 +419,19 @@
 
     /* ── Bottom sheet shared styles ── */
     .overlay {
-      display: none;
+      display: flex;
+      align-items: flex-end;
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,0.35);
       z-index: 100;
       backdrop-filter: blur(1px);
       -webkit-backdrop-filter: blur(1px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease;
     }
-    .overlay.open { display: flex; align-items: flex-end; }
+    .overlay.open { opacity: 1; pointer-events: auto; }
 
     .sheet {
       background: var(--surface);
@@ -523,10 +553,11 @@
       font-size: 14px;
       font-weight: 500;
       color: var(--text);
-      background: transparent;
-      border: none;
+      background: var(--bg-subtle);
+      border: 1.5px solid var(--border-mid);
+      border-radius: 8px;
       cursor: pointer;
-      padding: 4px;
+      padding: 6px 10px;
     }
 
     .notif-time-row {
@@ -680,7 +711,7 @@
         <div class="sheet-row notif-time-row" id="notifTimeRow">
           <div>
             <div class="sheet-row-label">Alert time</div>
-            <div class="sheet-row-hint">Your timezone</div>
+            <div class="sheet-row-hint" id="tzHint">Your timezone</div>
           </div>
           <input type="time" id="notifTime" class="time-input">
         </div>
@@ -886,6 +917,12 @@
     // Update bell indicator in card header in-place
     const bellEl = document.getElementById(`bell-${sym}`);
     if (bellEl) bellEl.innerHTML = bellIcon(15, notifEnabled[sym]);
+    // Update notify button in expanded detail in-place
+    const detailBtnEl = document.getElementById(`notif-detail-btn-${sym}`);
+    if (detailBtnEl) {
+      detailBtnEl.innerHTML = bellIcon(14, notifEnabled[sym]) +
+        `<span>${notifEnabled[sym] ? 'Notify On' : 'Notify Off'}</span>`;
+    }
     if (window.Android && typeof window.Android.rescheduleNotifications === 'function') {
       try { window.Android.rescheduleNotifications(); } catch (_) {}
     }
@@ -893,13 +930,21 @@
 
   function openSettings() {
     document.getElementById('settingsOverlay').classList.add('open');
+    try {
+      const abbr = new Date().toLocaleTimeString('en-US', { timeZoneName: 'short' })
+        .match(/[A-Z]{3,5}/)?.[0]
+        || Intl.DateTimeFormat().resolvedOptions().timeZone.split('/').pop().replace(/_/g, ' ');
+      const el = document.getElementById('tzHint');
+      if (el) el.textContent = abbr;
+    } catch (_) {}
   }
   function closeSettings() {
     saveSettings();
-    const sheet = document.getElementById('settingsSheet');
+    const overlay = document.getElementById('settingsOverlay');
+    const sheet   = document.getElementById('settingsSheet');
     sheet.classList.add('closing');
+    overlay.classList.remove('open');
     setTimeout(() => {
-      document.getElementById('settingsOverlay').classList.remove('open');
       sheet.classList.remove('closing');
       renderCards();
       tracked.filter(s => !results[s] || results[s].state === 'error').forEach(fetchOne);
@@ -950,10 +995,11 @@
   }
 
   function closeAddIndex() {
-    const sheet = document.getElementById('addSheet');
+    const overlay = document.getElementById('addOverlay');
+    const sheet   = document.getElementById('addSheet');
     sheet.classList.add('closing');
+    overlay.classList.remove('open');
     setTimeout(() => {
-      document.getElementById('addOverlay').classList.remove('open');
       sheet.classList.remove('closing');
     }, 220);
   }
@@ -1101,6 +1147,16 @@
                 <span class="detail-value" style="color:${distCol}">${sign}${fmt(r.price - r.sma)} (${sign}${r.pct.toFixed(2)}%)</span>
               </div>
             </div>
+            <div class="detail-actions">
+              <button class="detail-action-btn" id="notif-detail-btn-${sym}" onclick="toggleNotif('${sym}', event)">
+                ${bellIcon(14, notifEnabled[sym])}
+                <span>${notifEnabled[sym] ? 'Notify On' : 'Notify Off'}</span>
+              </button>
+              <button class="detail-action-btn detail-action-remove" onclick="deleteIndex('${sym}', event)">
+                ${TRASH}
+                <span>Remove</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>`;
@@ -1139,6 +1195,14 @@
 
   // ── Fetch ─────────────────────────────────────────────────────
   async function fetchBarchartData(symbol) {
+    const isMock = !window.Android &&
+      (location.protocol === 'file:' || location.hostname === 'localhost' ||
+       location.hostname.endsWith('github.io'));
+    if (isMock) {
+      const m = MOCK[symbol];
+      if (m) return m;
+      throw new Error('No mock data');
+    }
     if (window.Android && typeof window.Android.getHistoricalData === 'function') {
       try {
         const raw = window.Android.getHistoricalData(symbol);

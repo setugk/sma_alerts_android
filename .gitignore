@@ -2,6 +2,10 @@
 # Root .gitignore for SMA Alerts Android App
 # ============================================
 
+# Claude Code context — local only, never PR'd to upstream repo
+context.md
+
+
 # IDE and Editor files
 .cursor/
 .vscode/
