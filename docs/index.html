@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>SMA Signals</title>
   <style>
     /* ── Tokens ── */
@@ -409,6 +409,13 @@
     @keyframes slideUp {
       from { transform: translateY(100%); }
       to   { transform: translateY(0); }
+    }
+    @keyframes slideDown {
+      from { transform: translateY(0); }
+      to   { transform: translateY(100%); }
+    }
+    .sheet.closing {
+      animation: slideDown 0.22s cubic-bezier(0.32, 0.72, 0, 1) forwards;
     }
 
     .sheet-handle {
@@ -860,9 +867,14 @@
   }
   function closeSettings() {
     saveSettings();
-    document.getElementById('settingsOverlay').classList.remove('open');
-    renderCards();
-    tracked.filter(s => !results[s] || results[s].state === 'error').forEach(fetchOne);
+    const sheet = document.getElementById('settingsSheet');
+    sheet.classList.add('closing');
+    setTimeout(() => {
+      document.getElementById('settingsOverlay').classList.remove('open');
+      sheet.classList.remove('closing');
+      renderCards();
+      tracked.filter(s => !results[s] || results[s].state === 'error').forEach(fetchOne);
+    }, 220);
   }
   function settingsOverlayClick(e) {
     if (e.target === document.getElementById('settingsOverlay')) closeSettings();
@@ -909,7 +921,12 @@
   }
 
   function closeAddIndex() {
-    document.getElementById('addOverlay').classList.remove('open');
+    const sheet = document.getElementById('addSheet');
+    sheet.classList.add('closing');
+    setTimeout(() => {
+      document.getElementById('addOverlay').classList.remove('open');
+      sheet.classList.remove('closing');
+    }, 220);
   }
   function addOverlayClick(e) {
     if (e.target === document.getElementById('addOverlay')) closeAddIndex();
@@ -1149,6 +1166,11 @@
   function fmt(n) {
     return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
+
+  // Prevent pinch-zoom on iOS Safari (viewport meta covers Android/others)
+  document.addEventListener('touchmove', e => {
+    if (e.touches.length > 1) e.preventDefault();
+  }, { passive: false });
 
   // ── Init ──────────────────────────────────────────────────────
   window.onload = function () {
