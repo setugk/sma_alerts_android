@@ -765,17 +765,23 @@
         inner.style.transform = `translateX(-${actionWidth}px)`;
         activeSwipe = sym;
       } else {
+        card.style.overflow = 'visible';
         inner.style.transform = 'translateX(0)';
+        setTimeout(() => { card.style.overflow = ''; }, 420);
         if (activeSwipe === sym) activeSwipe = null;
       }
     });
   }
 
   function closeSwipe(sym) {
-    const inner = document.querySelector(`.index-card[data-sym="${sym}"] .card-inner`);
+    const card  = document.querySelector(`.index-card[data-sym="${sym}"]`);
+    const inner = card?.querySelector('.card-inner');
     if (inner) {
+      // Unlock overflow so the spring overshoot past 0 is visible, then restore
+      if (card) card.style.overflow = 'visible';
       inner.style.transition = 'transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
       inner.style.transform  = 'translateX(0)';
+      setTimeout(() => { if (card) card.style.overflow = ''; }, 420);
     }
     if (activeSwipe === sym) activeSwipe = null;
   }
@@ -1192,8 +1198,11 @@
       inner.style.transition = 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
       inner.style.transform  = 'translateX(-80px)';
       setTimeout(() => {
+        const parent = inner.closest('.index-card');
+        if (parent) parent.style.overflow = 'visible';
         inner.style.transition = 'transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)';
         inner.style.transform  = 'translateX(0)';
+        setTimeout(() => { if (parent) parent.style.overflow = ''; }, 470);
       }, 900);
     }, 800);
   }
