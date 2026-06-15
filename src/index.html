@@ -1208,6 +1208,7 @@
        location.hostname.endsWith('github.io'));
     if (isMock) {
       const m = MOCK[symbol];
+      await new Promise(r => setTimeout(r, 400 + Math.random() * 400));
       if (m) return m;
       throw new Error('No mock data');
     }
